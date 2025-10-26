@@ -1,40 +1,51 @@
 // api/submit-score.js
-import { Redis } from "@upstash/redis";
+export const config = { runtime: 'edge' };
 
-const redis = Redis.fromEnv(); // uses UPSTASH_REDIS_REST_URL + TOKEN
-
-export default async function handler(req, res) {
-  try {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-    const body = await readJSON(req);
-    const { password, judge, scores } = body || {};
-
-    if (!password || password !== process.env.JUDGE_PASSWORD) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    if (!judge || typeof judge !== "string" || !scores || typeof scores !== "object") {
-      return res.status(400).json({ error: "Missing judge or scores" });
-    }
-
-    const name = judge.trim();
-
-    // Store one JSON blob per judge and keep an index of judges
-    await redis.set(`scores:${name}`, JSON.stringify(scores));
-    await redis.sadd("judges", name);
-
-    return res.status(200).json({ ok: true });
-  } catch (e) {
-    return res.status(500).json({ error: "Server error" });
-  }
+function okJudgePass(pw) {
+  const judge = (process.env.JUDGE_PASSWORD || '').trim();
+  return !!pw && !!judge && pw === judge;
 }
 
-async function readJSON(req) {
+function bad(msg, code = 400) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status: code,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+export default async function handler(req) {
   try {
-    const chunks = [];
-    for await (const c of req) chunks.push(c);
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    if (req.method !== 'POST') return bad('Use POST', 405);
+
+    const body = await req.json();
+    const judge = String(body?.judge || '').trim();
+    const password = String(body?.password || '');
+    const scores = body?.scores || {};
+
+    if (!okJudgePass(password)) return bad('Unauthorized', 401);
+    if (!judge) return bad('Missing judge name');
+    if (typeof scores !== 'object') return bad('Invalid scores payload');
+
+    // Upstash REST env
+    const url = (process.env.KV_REST_API_URL || '').trim();
+    const token = (process.env.KV_REST_API_TOKEN || '').trim();
+    if (!url || !token) return bad('KV not configured', 500);
+
+    // Write per-judge key
+    const key = `wmb:scores:${judge}`;
+    const value = encodeURIComponent(JSON.stringify({ judge, scores, ts: Date.now() }));
+
+    const r = await fetch(`${url}/set/${encodeURIComponent(key)}/${value}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await r.json();
+    if (!r.ok || data?.error) return bad(data?.error || 'KV write failed', 500);
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200, headers: { 'content-type': 'application/json' }
+    });
   } catch {
-    return null;
+    return bad('Server error', 500);
   }
 }
