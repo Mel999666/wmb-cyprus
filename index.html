@@ -97,12 +97,30 @@
     </div>
   </footer>
 
+  <!-- band data -->
   <script src="./bands.js"></script>
+
   <script>
-    // Will be filled by live API calls
+    // Stats store (merged from manual + live)
     const STATS = Object.create(null);
 
+    // Apply manual Instagram and Facebook stats from bands.js
+    function applyManualStats() {
+      for (const b of window.BANDS) {
+        if (!b.manualStats) continue;
+        if (!STATS[b.name]) STATS[b.name] = {};
+        const m = b.manualStats;
+        if (Number.isFinite(m.instagramFollowers)) {
+          STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
+        }
+        if (Number.isFinite(m.facebookFollowers)) {
+          STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
+        }
+      }
+    }
+
     function byName(a,b){ return a.name.localeCompare(b.name); }
+
     function ytId(url){
       if(!url) return null;
       try{
@@ -115,7 +133,6 @@
       }catch(e){}
       return null;
     }
-    function pickLongest(arr){ return arr.filter(Boolean).sort((a,b)=>b.length - a.length)[0] || null; }
 
     function renderSummary(){
       document.getElementById('totalCount').textContent = window.BANDS.length;
@@ -212,14 +229,23 @@
       const fb = b.fbPageId ? await getJSON(`/api/facebook-followers?pageId=${encodeURIComponent(b.fbPageId)}`) : null;
       const ig = b.igUserId ? await getJSON(`/api/instagram-followers?igUserId=${encodeURIComponent(b.igUserId)}`) : null;
 
+      // preserve manual followers if present; fill live values elsewhere
+      const prev = STATS[b.name] || {};
       STATS[b.name] = {
-        youtubeViews: yt?.views || 0,
-        spotifyPopularity: sp?.popularity || 0,
-        spotifyEmbed: sp?.embedUrl || null,
-        facebookFollowers: fb?.followers || 0,
-        instagramFollowers: ig?.followers || 0,
-        bio: (function(){ const arr = []; if (fb?.about) arr.push(fb.about); if (ig?.biography) arr.push(ig.biography); return arr.sort((a,b)=> (b?.length||0)-(a?.length||0))[0] || null; })()
+        ...prev,
+        youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
+        spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
+        spotifyEmbed: sp?.embedUrl ?? prev.spotifyEmbed ?? null,
+        facebookFollowers: prev.facebookFollowers ?? (fb?.followers || 0),
+        instagramFollowers: prev.instagramFollowers ?? (ig?.followers || 0),
+        bio: prev.bio ?? (function () {
+          const arr = [];
+          if (fb?.about) arr.push(fb.about);
+          if (ig?.biography) arr.push(ig.biography);
+          return arr.sort((a,b)=>(b?.length||0)-(a?.length||0))[0] || null;
+        })()
       };
+
       patchBandCard(b.name);
     }
 
@@ -228,11 +254,18 @@
       renderBoards();
     }
 
-    // initial render then live load
+    // initial render
     renderSummary();
     renderBands();
+
+    // apply manual FB/IG numbers immediately, then render leaderboards
+    applyManualStats();
     renderBoards();
+
+    // footer year
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // live loads: YouTube + Spotify will fill in after this
     loadAllLive();
   </script>
 </body>
