@@ -3,114 +3,200 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>WMB Cyprus — Results</title>
-<link rel="icon" href="/public/wmb-logo.jpg" />
+<title>Judging Results — Wacken Metal Battle Cyprus</title>
 <style>
-  :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--accent:#b3121f;--border:#2b2023}
-  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0d0b0d,#080708);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
-  header{border-bottom:1px solid var(--border);background:rgba(10,10,11,.85);backdrop-filter:blur(8px)}
-  .container{max-width:1100px;margin:0 auto;padding:16px}
-  h1{margin:0;font-size:clamp(20px,4vw,28px)}
-  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:16px}
-  .note{color:var(--muted);font-size:13px}
-  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
-  th,td{border-bottom:1px solid var(--border);padding:10px;vertical-align:top}
-  thead th{background:#120f10}
-  .btn{border:1px solid var(--border);background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
-  .grid{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--crimson:#b3121f}
+  *{box-sizing:border-box} body{margin:0;background:#0a0a0b;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  header{position:sticky;top:0;background:#0d0b0d;border-bottom:1px solid #231a1d}
+  .container{max-width:1140px;margin:0 auto;padding:16px 20px}
+  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:14px;padding:16px;margin:18px 0}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:13px}
+  input,button{font:inherit}
+  input[type=password]{background:#120f10;border:1px solid #2b2023;border-radius:10px;color:var(--text);padding:10px 12px;min-width:260px}
+  button{background:#1a1416;border:1px solid #2b2023;color:#ffefe9;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button.primary{background:#b3121f;border-color:#b3121f}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
+  thead th{font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))}
+  .meta{color:var(--muted);font-size:13px}
+  .right{text-align:right}
+  .hidden{display:none}
 </style>
 </head>
 <body>
-<header><div class="container"><h1>Judging Results — Wacken Metal Battle Cyprus</h1></div></header>
+<header>
+  <div class="container">
+    <h2 style="margin:0 0 8px">Judging Results — Wacken Metal Battle Cyprus</h2>
+    <div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input id="adminPwd" type="password" autocomplete="current-password" placeholder="Admin / results password" />
+      <button id="btnLoad" class="primary">Load results</button>
+      <button id="btnCsv" class="hidden">Download Combined CSV</button>
+      <span id="status" class="meta"></span>
+    </div>
+    <div class="meta">Weights: Musicianship 40%, Originality 25%, Online Material Quality 20%, Online Presence 15%.</div>
+  </div>
+</header>
 
 <main class="container">
-  <div class="card">
-    <div class="grid">
-      <input type="password" id="adminPass" placeholder="Admin password" />
-      <button class="btn" id="loadBtn">Load results</button>
-      <button class="btn" id="downloadBtn" disabled>Download Combined CSV</button>
+  <section id="resultsCard" class="card hidden">
+    <div id="summary" class="meta" style="margin-bottom:10px"></div>
+    <div style="overflow:auto">
+      <table aria-label="Results table" id="tbl">
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th class="right">Avg Musician­ship</th>
+            <th class="right">Avg Originality</th>
+            <th class="right">Avg Material</th>
+            <th class="right">Avg Presence</th>
+            <th class="right">Avg Readiness</th>
+            <th class="right">Judges</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
-    <div class="note">Loads all judges’ saved sheets from the server and computes the Top 6 by average Wacken Readiness.</div>
-  </div>
-
-  <div class="card" id="top6Card" style="display:none">
-    <h3 style="margin:0 0 10px">Top 6 by Average Wacken Readiness</h3>
-    <table id="top6">
-      <thead><tr><th>#</th><th>Band</th><th>Average</th><th>Judge Count</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div class="card" id="allCard" style="display:none">
-    <h3 style="margin:0 0 10px">All Bands — Averages</h3>
-    <table id="all">
-      <thead><tr><th>Band</th><th>Average</th><th>Judges</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  </section>
 </main>
 
 <script>
-  let combined = []; // {band, avg, judges}
-  document.getElementById("loadBtn").addEventListener("click", load);
+const WEIGHTS = { m:0.40, o:0.25, q:0.20, p:0.15 }; // musicianship, originality, material quality, presence
 
-  async function load(){
-    const password = (document.getElementById("adminPass").value || "").trim();
-    if(!password){ alert("Enter the admin password."); return; }
+// Hide CSV until we have data
+const elPwd   = document.getElementById('adminPwd');
+const elLoad  = document.getElementById('btnLoad');
+const elCsv   = document.getElementById('btnCsv');
+const elStat  = document.getElementById('status');
+const elCard  = document.getElementById('resultsCard');
+const elBody  = document.getElementById('tbody');
+const elSum   = document.getElementById('summary');
 
-    const r = await fetch(`/api/get-scores?password=${encodeURIComponent(password)}`);
-    if(!r.ok){ alert("Auth failed or server error."); return; }
-    const j = await r.json();
-    const rows = [];
+function readiness(s) {
+  // s is {m,o,q,p}
+  return (s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p);
+}
 
-    // j.data = [{ judge, scores: { BandName: {mus, orig, material, presence, notes, total}, ... } }, ...]
-    for(const entry of j.data){
-      for(const [band, s] of Object.entries(entry.scores)){
-        rows.push({ band, total: +s.total || 0 });
-      }
+function average(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0) / arr.length;
+}
+
+function toFixed2(n){ return Number(n).toFixed(2); }
+
+function combineByBand(judgesObj) {
+  // judgesObj: { "Judge Name": { judge, when, scores:{ [bandName]: { m,o,q,p,c } } } }
+  const byBand = new Map();
+  const judgeCountForBand = new Map();
+
+  for (const [judge, sheet] of Object.entries(judgesObj||{})) {
+    const scores = sheet?.scores || {};
+    for (const [band, v] of Object.entries(scores)) {
+      if (!byBand.has(band)) byBand.set(band, { m:[], o:[], q:[], p:[], r:[] });
+      byBand.get(band).m.push(Number(v.m)||0);
+      byBand.get(band).o.push(Number(v.o)||0);
+      byBand.get(band).q.push(Number(v.q)||0);
+      byBand.get(band).p.push(Number(v.p)||0);
+      byBand.get(band).r.push(readiness(v));
+      judgeCountForBand.set(band, 1 + (judgeCountForBand.get(band)||0));
     }
-
-    // group by band and average
-    const byBand = {};
-    for(const row of rows){
-      if(!byBand[row.band]) byBand[row.band] = [];
-      byBand[row.band].push(row.total);
-    }
-
-    combined = Object.entries(byBand).map(([band, arr])=>{
-      const avg = arr.reduce((a,b)=>a+b,0) / arr.length;
-      return { band, avg, judges: arr.length };
-    }).sort((a,b)=>b.avg - a.avg);
-
-    // render Top 6
-    const topBody = document.querySelector("#top6 tbody");
-    topBody.innerHTML = combined.slice(0,6).map((r,i)=>`
-      <tr><td>${i+1}</td><td>${r.band}</td><td>${r.avg.toFixed(2)}</td><td>${r.judges}</td></tr>
-    `).join("");
-    document.getElementById("top6Card").style.display = "";
-
-    // render all
-    const allBody = document.querySelector("#all tbody");
-    allBody.innerHTML = combined.map(r=>`
-      <tr><td>${r.band}</td><td>${r.avg.toFixed(2)}</td><td>${r.judges}</td></tr>
-    `).join("");
-    document.getElementById("allCard").style.display = "";
-
-    document.getElementById("downloadBtn").disabled = false;
   }
 
-  document.getElementById("downloadBtn").addEventListener("click", ()=>{
-    const header = ["Band","AverageWackenReadiness","JudgeCount"];
-    const lines = [header.join(",")];
-    combined.forEach(r=>lines.push([csv(r.band), r.avg.toFixed(2), r.judges].join(",")));
-    const blob = new Blob([lines.join("\n")], {type:"text/csv"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "wmb-combined-averages.csv";
-    a.click();
+  const rows = [];
+  for (const [band, vec] of byBand.entries()) {
+    rows.push({
+      band,
+      m: average(vec.m),
+      o: average(vec.o),
+      q: average(vec.q),
+      p: average(vec.p),
+      r: average(vec.r),
+      judges: judgeCountForBand.get(band)||0
+    });
+  }
+  rows.sort((a,b)=> b.r - a.r);
+  return rows;
+}
+
+function renderResults(judgesObj){
+  const rows = combineByBand(judgesObj);
+  elBody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.band}</td>
+      <td class="right">${toFixed2(r.m)}</td>
+      <td class="right">${toFixed2(r.o)}</td>
+      <td class="right">${toFixed2(r.q)}</td>
+      <td class="right">${toFixed2(r.p)}</td>
+      <td class="right"><b>${toFixed2(r.r)}</b></td>
+      <td class="right" title="Number of judges who scored this band">${r.judges}</td>
+    </tr>
+  `).join('');
+  elSum.textContent = rows.length
+    ? `Top 6 by average Wacken Readiness: ${rows.slice(0,6).map(r=>r.band).join(', ')}.`
+    : 'No scores found yet.';
+  elCard.classList.remove('hidden');
+}
+
+function downloadCsv(judgesObj){
+  // Flat per-judge rows
+  const lines = [];
+  lines.push([
+    'judge','band','musicianship','originality','material_quality','online_presence','readiness'
+  ].join(','));
+
+  for (const [judge, sheet] of Object.entries(judgesObj||{})) {
+    const scores = sheet?.scores || {};
+    for (const [band, v] of Object.entries(scores)) {
+      const r = readiness(v);
+      lines.push([
+        `"${judge.replace(/"/g,'""')}"`,
+        `"${band.replace(/"/g,'""')}"`,
+        toFixed2(v.m||0),
+        toFixed2(v.o||0),
+        toFixed2(v.q||0),
+        toFixed2(v.p||0),
+        toFixed2(r)
+      ].join(','));
+    }
+  }
+
+  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'wmb-results.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadResults(){
+  elCsv.classList.add('hidden');
+  elCard.classList.add('hidden');
+  elStat.textContent = 'Loading…';
+
+  const pwd = elPwd.value.trim();
+  const res = await fetch('/api/get-scores?__=' + Date.now(), {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body: JSON.stringify({ password: pwd })
   });
 
-  function csv(val){ const v=(val??"").toString().replace(/"/g,'""'); return `"${v}"`; }
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = 'Auth failed or server error.';
+    try { msg = JSON.parse(text).error || msg; } catch {}
+    alert(msg);
+    elStat.textContent = '';
+    return;
+  }
+
+  let data = {};
+  try { data = JSON.parse(text); } catch {}
+  const judges = data.judges || {};
+  renderResults(judges);
+  elCsv.classList.remove('hidden');
+  elCsv.onclick = () => downloadCsv(judges);
+  elStat.textContent = `Loaded ${Object.keys(judges).length} judge sheet(s).`;
+}
+
+elLoad.addEventListener('click', loadResults);
 </script>
 </body>
 </html>
