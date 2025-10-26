@@ -1,24 +1,54 @@
 // api/get-scores.js
-import { Redis } from "@upstash/redis";
+export const config = { runtime: 'edge' };
 
-const redis = Redis.fromEnv();
+function okResultsPass(pw) {
+  const admin = (process.env.RESULTS_PASSWORD || '').trim();
+  return !!pw && !!admin && pw === admin;
+}
 
-export default async function handler(req, res) {
+function bad(msg, code = 400) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status: code,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+export default async function handler(req) {
   try {
-    const { password } = req.query || {};
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: "Unauthorized" });
+    if (req.method !== 'POST') return bad('Use POST', 405);
+    const body = await req.json();
+    if (!okResultsPass(String(body?.password || ''))) return bad('Unauthorized', 401);
+
+    const url = (process.env.KV_REST_API_URL || '').trim();
+    const token = (process.env.KV_REST_API_TOKEN || '').trim();
+    if (!url || !token) return bad('KV not configured', 500);
+
+    // List all judge keys
+    const keysRes = await fetch(`${url}/keys/${encodeURIComponent('wmb:scores:*')}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const keysJson = await keysRes.json();
+    const keys = Array.isArray(keysJson.result) ? keysJson.result : [];
+
+    // Read each key
+    const out = {};
+    for (const k of keys) {
+      const g = await fetch(`${url}/get/${encodeURIComponent(k)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const gj = await g.json();
+      if (gj?.result) {
+        try {
+          const val = JSON.parse(gj.result);
+          if (val?.judge && val?.scores) out[val.judge] = val;
+        } catch {}
+      }
     }
 
-    const judges = await redis.smembers("judges"); // array of judge names
-    const data = [];
-    for (const j of judges) {
-      const raw = await redis.get(`scores:${j}`);
-      if (!raw) continue;
-      data.push({ judge: j, scores: JSON.parse(raw) });
-    }
-    return res.status(200).json({ ok: true, judges, data });
+    return new Response(JSON.stringify({ judges: out }), {
+      status: 200, headers: { 'content-type': 'application/json' }
+    });
   } catch {
-    return res.status(500).json({ error: "Server error" });
+    return bad('Server error', 500);
   }
 }
