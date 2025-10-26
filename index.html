@@ -6,18 +6,9 @@
   <title>Wacken Metal Battle Cyprus — Applications</title>
   <meta name="description" content="Public showcase of bands that applied for Wacken Metal Battle Cyprus." />
   <style>
-    :root{
-      --bg: #0a0a0b;
-      --panel: #151215;
-      --text: #f2f2f2;
-      --muted: #b8b6bb;
-      --red: #8b0f17;
-      --crimson: #b3121f;
-      --lava: #ff5a1f;
-      --ring: rgba(255,90,31,0.35);
-    }
+    :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35)}
     *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,0.08),transparent),
+    body{margin:0;background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
       linear-gradient(180deg,#0d0b0d,#080708 65%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
     a{color:var(--text);text-decoration:none}
     a:focus{outline:2px solid var(--ring);outline-offset:3px;border-radius:8px}
@@ -61,7 +52,7 @@
     <div class="container nav">
       <img class="logo" src="./public/wmb-logo.jpg" alt="Metal Battle logo">
       <div class="site-title">Wacken Metal Battle Cyprus</div>
-      <!-- New menu -->
+      <!-- Menu -->
       <nav style="margin-left:auto;display:flex;gap:14px">
         <a href="/judge.html" class="pill">Judges</a>
         <a href="/results.html" class="pill">Results</a>
@@ -70,6 +61,7 @@
   </header>
 
   <main class="container">
+    <!-- Applications Summary -->
     <section class="section card" id="summary">
       <div class="h2">Applications</div>
       <p class="lead"><span class="pill">Total</span> <b id="totalCount">0</b></p>
@@ -81,6 +73,7 @@
       </div>
     </section>
 
+    <!-- Leaderboards -->
     <section class="section card" id="leaderboards">
       <div class="h2">Leaderboards</div>
       <p class="lead">Top six bands for each metric. These fill from the live API where permitted.</p>
@@ -92,5 +85,168 @@
       </div>
     </section>
 
+    <!-- Band profiles -->
     <section class="section" id="bands"></section>
-  </ma
+  </main>
+
+  <footer>
+    <div class="container" style="padding:20px 0;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <span>© <span id="year"></span> Wacken Metal Battle Cyprus</span>
+      <span class="meta">Palette inspired by event artwork</span>
+    </div>
+  </footer>
+
+  <!-- Band data -->
+  <script src="./bands.js"></script>
+  <!-- Safety guard so the page still renders if bands.js fails -->
+  <script>window.BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];</script>
+
+  <script>
+    // Stats store (merged from manual + live)
+    const STATS = Object.create(null);
+    const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
+
+    // Apply manual Instagram and Facebook stats from bands.js
+    function applyManualStats() {
+      for (const b of BANDS) {
+        if (!b.manualStats) continue;
+        if (!STATS[b.name]) STATS[b.name] = {};
+        const m = b.manualStats;
+        if (Number.isFinite(m.instagramFollowers)) STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
+        if (Number.isFinite(m.facebookFollowers)) STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
+      }
+    }
+
+    function byName(a,b){ return a.name.localeCompare(b.name); }
+
+    function ytId(url){
+      if(!url) return null;
+      try{
+        const u = new URL(url.replace("music.youtube.com","www.youtube.com"));
+        const id = u.searchParams.get('v');
+        if(id) return id;
+        const parts = u.pathname.split('/').filter(Boolean);
+        const i = parts.indexOf('shorts');
+        if (i !== -1 && parts[i+1]) return parts[i+1];
+      }catch(e){}
+      return null;
+    }
+
+    function renderSummary(){
+      document.getElementById('totalCount').textContent = BANDS.length;
+      const tb = document.getElementById('alphabetical');
+      tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
+    }
+
+    function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
+
+    function renderBoards(){
+      const metrics = [
+        { key:'spotifyPopularity', target:'board-spotify', label:'popularity' },
+        { key:'facebookFollowers', target:'board-facebook', label:'followers' },
+        { key:'youtubeViews', target:'board-youtube', label:'views' },
+        { key:'instagramFollowers', target:'board-instagram', label:'followers' },
+      ];
+      metrics.forEach(m => {
+        const list = [...BANDS]
+          .map(b=>({ name:b.name, val:metric(b.name,m.key) }))
+          .sort((a,b)=>b.val-a.val)
+          .slice(0,6);
+        document.getElementById(m.target).innerHTML =
+          list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
+      });
+    }
+
+    function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
+
+    function bandCardHTML(b){
+      const id = ytId(b.youtube);
+      const yt = id ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${id}"></iframe>` : `<div class="stat">No video provided</div>`;
+      return `
+        <article class="band-card" data-band="${b.name}">
+          <div class="band-head">
+            <div class="band-name">${b.name}</div>
+            <div class="links">
+              ${link('Spotify', b.spotify)}
+              ${link('Facebook', b.facebookUrl)}
+              ${link('YouTube', b.youtube)}
+              ${link('Instagram', b.instagramUrl)}
+            </div>
+          </div>
+          <div class="band-body">
+            <div>
+              <div class="pill">Featured video</div>
+              ${yt}
+              <div class="pill" style="margin-top:12px">Spotify</div>
+              <div data-slot="spotify">Spotify player will load here</div>
+            </div>
+            <div class="stats">
+              <div class="stat"><span>Instagram followers</span> <b data-stat="instagramFollowers">0</b></div>
+              <div class="stat"><span>Facebook followers</span> <b data-stat="facebookFollowers">0</b></div>
+              <div class="stat"><span>Top YouTube video views</span> <b data-stat="youtubeViews">0</b></div>
+              <div class="stat"><span>Spotify top-track popularity</span> <b data-stat="spotifyPopularity">0</b></div>
+              <div class="stat" style="display:block">
+                <div class="pill">Bio</div>
+                <p class="lead" data-slot="bio" style="margin:8px 0 0">Bio will populate from Facebook or Instagram once connected.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderBands(){
+      const wrap = document.getElementById('bands');
+      wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
+    }
+
+    function patchBandCard(name){
+      const data = STATS[name] || {};
+      const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
+      if (!card) return;
+      const sp = card.querySelector("[data-slot=spotify]");
+      const bio = card.querySelector("[data-slot=bio]");
+      if (sp && data.spotifyEmbed) sp.innerHTML = `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${data.spotifyEmbed}"></iframe>`;
+      if (bio && data.bio) bio.textContent = data.bio;
+      ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
+        const el = card.querySelector(`[data-stat="${key}"]`);
+        if (el) el.textContent = (data[key] || 0).toLocaleString();
+      });
+    }
+
+    async function getJSON(u){ try{ const r = await fetch(u); return await r.json(); }catch{ return null; } }
+
+    async function loadBandLive(b){
+      const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
+      const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
+      const fb = b.fbPageId ? await getJSON(`/api/facebook-followers?pageId=${encodeURIComponent(b.fbPageId)}`) : null;
+      const ig = b.igUserId ? await getJSON(`/api/instagram-followers?igUserId=${encodeURIComponent(b.igUserId)}`) : null;
+
+      const prev = STATS[b.name] || {};
+      STATS[b.name] = {
+        ...prev,
+        youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
+        spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
+        spotifyEmbed: sp?.embedUrl ?? prev.spotifyEmbed ?? null,
+        facebookFollowers: prev.facebookFollowers ?? (fb?.followers || 0),
+        instagramFollowers: prev.instagramFollowers ?? (ig?.followers || 0),
+        bio: prev.bio ?? (function(){ const arr=[]; if(fb?.about) arr.push(fb.about); if(ig?.biography) arr.push(ig.biography); return arr.sort((a,b)=>(b?.length||0)-(a?.length||0))[0] || null; })()
+      };
+      patchBandCard(b.name);
+    }
+
+    async function loadAllLive(){
+      await Promise.all(BANDS.map(loadBandLive));
+      renderBoards();
+    }
+
+    // initial render
+    renderSummary();
+    renderBands();
+    applyManualStats();
+    renderBoards();
+    document.getElementById('year').textContent = new Date().getFullYear();
+    loadAllLive();
+  </script>
+</body>
+</html>
