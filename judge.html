@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WMB Cyprus — Judging Panel</title>
+<link rel="icon" href="/public/wmb-logo.jpg" />
+<style>
+  :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--accent:#b3121f;--border:#2b2023}
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0d0b0d,#080708);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  header{position:sticky;top:0;background:rgba(10,10,11,.85);border-bottom:1px solid var(--border);backdrop-filter:blur(8px)}
+  .container{max-width:1200px;margin:0 auto;padding:16px}
+  h1{margin:0;font-size:clamp(20px,4vw,28px)}
+  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:16px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .pill{background:#1a1416;border:1px solid var(--border);color:var(--muted);border-radius:999px;padding:6px 10px;font-size:12px}
+  .btn{border:1px solid var(--border);background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn.secondary{background:#1a1416}
+  .note{color:var(--muted);font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border-bottom:1px solid var(--border);padding:10px;vertical-align:top}
+  thead th{position:sticky;top:104px;background:#120f10;z-index:2}
+  tbody tr:hover{background:rgba(179,18,31,.08)}
+  input[type="range"]{width:120px}
+  input[type="text"], textarea{width:100%;background:#100d0e;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 8px}
+  .center{text-align:center}
+  .total{font-weight:800}
+  .judge-input{display:flex;gap:8px;align-items:center}
+  .judge-input input{width:220px}
+  .ok{color:#80e090} .err{color:#ff9c9c}
+</style>
+</head>
+<body>
+<header>
+  <div class="container" style="display:flex;justify-content:space-between;gap:16px;align-items:center">
+    <h1>Judging Panel — Wacken Metal Battle Cyprus</h1>
+    <div class="controls">
+      <span class="pill">Autosaves locally</span>
+      <div class="judge-input"><span class="note">Judge name</span><input type="text" id="judgeName" placeholder="e.g. Maria K." /></div>
+      <div class="judge-input"><span class="note">Password</span><input type="password" id="judgePass" placeholder="Judge password" /></div>
+      <button class="btn secondary" id="resetBtn">Reset all</button>
+      <button class="btn" id="saveServerBtn">Save to server</button>
+      <span id="saveStatus" class="note"></span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card">
+    <div class="note">
+      Score each band 0–10. <b>Wacken Readiness</b> is weighted:
+      <b>Musicianship 40%</b>, <b>Originality 25%</b>, <b>Online Material Quality 20%</b>, <b>Online Presence 15%</b>.
+    </div>
+  </div>
+
+  <div class="card" style="overflow:auto">
+    <table id="scoreTable" aria-label="Judging table">
+      <thead>
+        <tr>
+          <th>Band</th>
+          <th>Musicianship</th>
+          <th>Originality</th>
+          <th>Material Quality</th>
+          <th>Presence</th>
+          <th class="center">Wacken Readiness</th>
+          <th style="min-width:220px">Comments</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="./bands.js"></script>
+<script>
+  const WEIGHTS = { mus:0.40, orig:0.25, material:0.20, presence:0.15 };
+  const STORAGE_KEY = "wmb-judge-v3";
+  const BANDS = [...(window.BANDS||[])].sort((a,b)=>a.name.localeCompare(b.name));
+
+  const template = {}; BANDS.forEach(b => template[b.name] = { mus:0, orig:0, material:0, presence:0, notes:"" });
+  let state = loadState();
+  function loadState(){
+    try{ const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return structuredClone(template);
+      const parsed = JSON.parse(raw);
+      const merged = structuredClone(template);
+      for(const [name,val] of Object.entries(parsed)) merged[name] = { ...merged[name], ...val };
+      return merged;
+    }catch{ return structuredClone(template); }
+  }
+  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+  function calcTotal(s){ return s.mus*WEIGHTS.mus + s.orig*WEIGHTS.orig + s.material*WEIGHTS.material + s.presence*WEIGHTS.presence; }
+  function clamp(n){ n = isFinite(n)?n:0; if(n<0) return 0; if(n>10) return 10; return n; }
+  function escapeHTML(s){ return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  function sliderCell(field, val){
+    return `<td>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" min="0" max="10" step="1" value="${val}" data-field="${field}" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" style="width:42px" value="${val}" data-field="${field}-n" />
+      </div>
+    </td>`;
+  }
+  function row(b){
+    const s = state[b.name];
+    return `
+      <tr data-band="${b.name}">
+        <td><b>${b.name}</b><div class="note">${b.city||""}${b.genre? " · "+b.genre : ""}</div></td>
+        ${sliderCell("mus", s.mus)}
+        ${sliderCell("orig", s.orig)}
+        ${sliderCell("material", s.material)}
+        ${sliderCell("presence", s.presence)}
+        <td class="center total">${calcTotal(s).toFixed(2)}</td>
+        <td><textarea rows="2" placeholder="Comments" data-field="notes">${escapeHTML(s.notes)}</textarea></td>
+      </tr>`;
+  }
+
+  function render(){
+    document.getElementById("rows").innerHTML = BANDS.map(row).join("");
+    document.querySelectorAll("tr[data-band]").forEach(tr=>{
+      const name = tr.getAttribute("data-band");
+      tr.querySelectorAll('input[data-field]').forEach(input=>{
+        input.addEventListener("input", ()=>{
+          const f = input.getAttribute("data-field");
+          if(f.endsWith("-n")){
+            const base = f.slice(0,-2); const v = clamp(parseInt(input.value,10));
+            state[name][base] = v; tr.querySelector(`input[data-field="${base}"]`).value = v;
+          }else{
+            const v = clamp(parseInt(input.value,10));
+            state[name][f] = v; tr.querySelector(`input[data-field="${f}-n"]`).value = v;
+          }
+          tr.querySelector(".total").textContent = calcTotal(state[name]).toFixed(2);
+          save();
+        });
+      });
+      tr.querySelector('textarea[data-field="notes"]').addEventListener("input", e=>{ state[name].notes = e.target.value; save(); });
+    });
+
+    // restore judge name
+    document.getElementById("judgeName").value = localStorage.getItem("judgeName") || "";
+  }
+
+  async function saveToServer(){
+    const judge = (document.getElementById("judgeName").value || "").trim();
+    const password = (document.getElementById("judgePass").value || "").trim();
+    if(!judge) return setStatus("Please enter your judge name.", true);
+    if(!password) return setStatus("Please enter the judge password.", true);
+
+    // build payload: per band object including computed total
+    const payload = {};
+    BANDS.forEach(b=>{
+      const s = state[b.name];
+      payload[b.name] = { ...s, total: +calcTotal(s).toFixed(2) };
+    });
+
+    try{
+      const r = await fetch("/api/submit-score", {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ password, judge, scores: payload })
+      });
+      if(!r.ok){
+        const j = await r.json().catch(()=>({error:""}));
+        throw new Error(j.error || "Save failed");
+      }
+      localStorage.setItem("judgeName", judge);
+      setStatus("Saved to server.", false);
+    }catch(e){
+      setStatus(e.message || "Save failed", true);
+    }
+  }
+
+  function setStatus(msg, isErr){ const el = document.getElementById("saveStatus"); el.textContent = msg; el.className = "note " + (isErr?"err":"ok"); }
+
+  // buttons
+  document.getElementById("saveServerBtn").addEventListener("click", saveToServer);
+  document.getElementById("resetBtn").addEventListener("click", ()=>{
+    if(confirm("Reset all scores on this device?")){ state = structuredClone(template); save(); render(); }
+  });
+
+  render();
+</script>
+</body>
+</html>
