@@ -45,7 +45,6 @@ window.BANDS = [
     city: "Nicosia",
     youtube: "https://www.youtube.com/watch?v=Ocef41DXZOk",
     facebookUrl: "https://www.facebook.com/share/1HDsTp1voH/?mibextid=wwXIfr",
-    // Their link points to YouTube Music. We still handle it.
     spotify: "https://youtube.com/@leavethewave?si=V7VJqZ_srN9cxGxw",
     instagramUrl: "https://www.instagram.com/leavethewave/",
     fbPageId: "",
@@ -110,4 +109,18 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/ymnky_band/",
     fbPageId: "",
     igUserId: "",
-    manualStats: { facebookFol
+    manualStats: { facebookFollowers: 249, instagramFollowers: 1746 }
+  },
+  {
+    name: "Blynd",
+    genre: "Melodic Death Metal",
+    city: "Nicosia",
+    youtube: "https://www.youtube.com/watch?v=uVirgsDsaQ8&list=RDuVirgsDsaQ8&start_radio=1",
+    facebookUrl: "https://www.facebook.com/blyndmetal/",
+    spotify: "https://open.spotify.com/artist/5CgHUnYxF7RGMsD5BYY0lP",
+    instagramUrl: "https://www.instagram.com/blyndmetal/",
+    fbPageId: "",
+    igUserId: "",
+    manualStats: { facebookFollowers: 5900, instagramFollowers: 1346 }
+  }
+];
