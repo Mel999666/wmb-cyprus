@@ -13,53 +13,49 @@
   body{margin:0;background:linear-gradient(180deg,#0d0b0d,#080708 65%);color:var(--text);
        font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
   a{color:var(--text);text-decoration:none}
-  .container{max-width:1200px;margin:0 auto;padding:20px}
+  .container{max-width:900px;margin:0 auto;padding:20px}
   .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid var(--line);
         border-radius:16px;padding:16px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
-  .h1{font-size:clamp(20px,2.8vw,32px);font-weight:800;margin:0 0 6px}
+  .h1{font-size:clamp(20px,2.6vw,30px);font-weight:800;margin:0 0 8px}
   .muted{color:var(--muted)}
   .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
         background:#1a1416;border:1px solid var(--line);color:var(--muted);font-size:12px}
 
-  /* gate */
-  .login{display:grid;gap:12px;max-width:560px;margin:28px auto}
-  .login h2{margin:0}
+  /* Inputs and buttons */
   input[type=text],input[type=password]{background:#0f0d0e;border:1px solid var(--line);
     color:var(--text);padding:10px 12px;border-radius:10px;min-width:220px}
   button{background:var(--crimson);border:none;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer}
-  button.secondary{background:#1a1416;border:1px solid var(--line);color:var(--text)}
+  button.secondary{background:#1a1416;border:1px solid var(--line);color:#fff}
+  button.ok{background:#276a39}
   button:focus,input:focus{outline:2px solid var(--ring);outline-offset:2px}
-  .ok{background:#276a39} .warn{background:#7a3b00}
+
+  /* Gate */
+  .login{display:grid;gap:12px;max-width:560px;margin:28px auto}
+  .login h2{margin:0}
   .hidden{display:none}
 
-  /* criteria explainer */
-  .explainer{display:grid;gap:10px;margin:14px 0}
-  .explainer .row{display:grid;grid-template-columns:180px 1fr;gap:14px;border:1px solid var(--line);
-    border-radius:12px;padding:10px;background:#130f10}
-  .explainer b{white-space:nowrap}
+  /* Explainer */
+  .explainer{display:grid;gap:10px;margin:12px 0}
+  .ex-row{display:grid;gap:8px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#130f10}
+  .ex-row b{font-weight:700}
 
-  /* scoring grid: responsive and no cropping */
-  .grid{
-    display:grid;
-    grid-template-columns:minmax(220px,1.1fr) 1fr 1fr 1fr 1fr 120px minmax(260px,1.6fr);
-    gap:10px;align-items:center
-  }
-  .head{font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:#ffefe9;
-        background:linear-gradient(180deg,rgba(179,18,31,.25),rgba(139,15,23,.08));
-        border:1px solid var(--line);padding:10px;border-radius:10px}
-  .row{border:1px solid var(--line);border-radius:12px;padding:10px;background:#120f10}
-  .row{display:grid;grid-template-columns:inherit;gap:10px;align-items:center}
-  .bandcell b{display:block}
-  .bandmeta{color:var(--muted);font-size:12px}
-  .sl{display:flex;align-items:center;gap:10px}
-  .sl input[type=range]{width:100%}
-  .badge{background:#1a1416;border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:52px;text-align:center}
-  textarea{width:100%;min-height:44px;resize:vertical;background:#0f0d0e;border:1px solid var(--line);color:#fff;border-radius:10px;padding:8px 10px}
+  /* Band card — stacked vertical layout */
+  .band{border:1px solid var(--line);border-radius:14px;padding:14px;background:#120f10;margin-bottom:14px}
+  .band h3{margin:0 0 4px;font-size:18px}
+  .band .meta{color:var(--muted);font-size:13px;margin-bottom:10px}
 
-  @media (max-width:900px){
-    .grid,.row{grid-template-columns:1fr}
-    .head{display:none}
-  }
+  .row{display:grid;gap:8px;margin:10px 0}
+  .row label{font-size:14px;font-weight:600}
+  .row .control{display:flex;gap:10px;align-items:center}
+  .row input[type=range]{width:100%}
+  .badge{background:#1a1416;border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:48px;text-align:center}
+
+  .readiness{display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+             border-top:1px solid var(--line);padding-top:10px}
+  .readiness b{font-size:16px}
+
+  textarea{width:100%;min-height:70px;resize:vertical;background:#0f0d0e;border:1px solid var(--line);
+           color:#fff;border-radius:10px;padding:10px}
 
   .topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
   .right{margin-left:auto}
@@ -69,10 +65,10 @@
   <div class="container">
     <h1 class="h1">Judging Panel — Wacken Metal Battle Cyprus</h1>
 
-    <!-- Login gate -->
+    <!-- Password gate -->
     <section id="gate" class="card login">
       <h2>Enter judging password</h2>
-      <p class="muted">The scoring interface unlocks after password is verified.</p>
+      <p class="muted">The scoring interface unlocks after password verification.</p>
       <input id="judgeName" type="text" placeholder="Your name e.g. Maria K." autocomplete="name">
       <input id="judgePwd" type="password" placeholder="Judge password" autocomplete="current-password">
       <div style="display:flex;gap:10px;align-items:center">
@@ -81,7 +77,7 @@
       </div>
     </section>
 
-    <!-- Scoring UI (hidden until auth) -->
+    <!-- Panel -->
     <section id="panel" class="hidden">
       <div class="topbar">
         <span class="pill">Autosaves locally</span>
@@ -94,168 +90,178 @@
 
       <div class="card">
         <div class="explainer">
-          <div class="row"><b>Musicianship 40 percent</b>
-            <div>Technical skill, tightness, timing, live performance ability, vocal control, overall execution.</div></div>
-          <div class="row"><b>Originality 25 percent</b>
-            <div>Distinctive sound or identity, songwriting ideas, risk taking, not derivative.</div></div>
-          <div class="row"><b>Online Material Quality 20 percent</b>
-            <div>Quality of videos and recordings, image and artwork, professionalism of content.</div></div>
-          <div class="row"><b>Online Presence 15 percent</b>
-            <div>Following and engagement across platforms, posting cadence, response to fans.</div></div>
+          <div class="ex-row"><b>Musicianship 40 percent</b>
+            <div>Technical skill, timing, tightness, vocal control, compositional ability.</div></div>
+          <div class="ex-row"><b>Originality 25 percent</b>
+            <div>Distinctive sound or concept, songwriting ideas, creativity, not derivative.</div></div>
+          <div class="ex-row"><b>Online Material Quality 20 percent</b>
+            <div>Quality of videos and recordings, presentation, professionalism of artwork or photos.</div></div>
+          <div class="ex-row"><b>Online Presence 15 percent</b>
+            <div>Engagement and following across platforms, posting consistency, communication with fans.</div></div>
         </div>
         <p class="muted">Score each band from 0 to 10. Wacken Readiness is a weighted score:
           40 percent Musicianship, 25 percent Originality, 20 percent Online Material Quality, 15 percent Online Presence.</p>
       </div>
 
-      <div id="table" class="card" style="margin-top:14px">
-        <div class="grid">
-          <div class="head">Band</div>
-          <div class="head">Musicianship</div>
-          <div class="head">Originality</div>
-          <div class="head">Material Quality</div>
-          <div class="head">Presence</div>
-          <div class="head">Readiness</div>
-          <div class="head">Comments</div>
-        </div>
-        <div id="rows"></div>
-      </div>
+      <!-- Bands will be injected here -->
+      <div id="bandsWrap" class="card" style="margin-top:14px"></div>
     </section>
   </div>
 
+<!-- Load shared band list so Blynd and any new bands appear automatically -->
 <script>
-  // ---- Auth gate -----------------------------------------------------------
-  const gate = document.getElementById('gate');
-  const panel = document.getElementById('panel');
-  const nameField = document.getElementById('judgeName');
-  const nameTop   = document.getElementById('judgeNameTop');
-  const pwdField  = document.getElementById('judgePwd');
-  const msg       = document.getElementById('gateMsg');
+  const AUTH_KEY='wmb.judge.auth';
+  const LOCAL_KEY='wmb.judge.scores';
+  const NAME_KEY='wmb.judge.name';
+  const PWD_KEY='wmb.judge.pwd'; // stored in sessionStorage only
 
-  const AUTH_KEY = 'wmb.judge.auth';
-  const LOCAL_KEY = 'wmb.judge.scores';
+  const gate=document.getElementById('gate');
+  const panel=document.getElementById('panel');
+  const nameField=document.getElementById('judgeName');
+  const nameTop=document.getElementById('judgeNameTop');
+  const pwdField=document.getElementById('judgePwd');
+  const msg=document.getElementById('gateMsg');
+
+  async function loadBandsScript(){
+    await new Promise((resolve)=>{
+      const s=document.createElement('script');
+      s.src='/bands.js?v=judges';
+      s.onload=resolve; s.onerror=resolve;
+      document.head.appendChild(s);
+    });
+    return Array.isArray(window.BANDS)?window.BANDS:[];
+  }
 
   async function checkPassword(pwd){
     try{
-      const r = await fetch('/api/judge-check', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({password:pwd})});
-      if(r.ok){ return true; }
-    }catch(e){}
-    return false;
+      const r=await fetch('/api/judge-check',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:pwd})});
+      return r.ok;
+    }catch{return false;}
   }
 
   function openPanel(){
     gate.classList.add('hidden');
     panel.classList.remove('hidden');
-    nameTop.value = nameField.value || localStorage.getItem('wmb.judge.name') || '';
-    nameTop.addEventListener('input', ()=> localStorage.setItem('wmb.judge.name', nameTop.value));
+    nameTop.value=nameField.value||localStorage.getItem(NAME_KEY)||'';
+    nameTop.addEventListener('input',()=>localStorage.setItem(NAME_KEY,nameTop.value));
   }
 
-  document.getElementById('btnLogin').addEventListener('click', async ()=>{
-    msg.textContent = 'Checking...';
-    const ok = await checkPassword(pwdField.value.trim());
-    if(!ok){ msg.textContent = 'Wrong password'; return; }
-    localStorage.setItem(AUTH_KEY, '1');
-    msg.textContent = 'Unlocked';
+  document.getElementById('btnLogin').addEventListener('click',async()=>{
+    msg.textContent='Checking...';
+    const ok=await checkPassword(pwdField.value.trim());
+    if(!ok){ msg.textContent='Wrong password'; return; }
+    sessionStorage.setItem(PWD_KEY,pwdField.value.trim());
+    localStorage.setItem(AUTH_KEY,'1');
+    msg.textContent='Unlocked';
     openPanel();
-    initScoring(); // after unlocked, build UI
+    initScoring();
   });
 
-  // If already authenticated in this browser, bypass gate
-  if(localStorage.getItem(AUTH_KEY) === '1'){
+  if(localStorage.getItem(AUTH_KEY)==='1'){
     openPanel();
     initScoring();
   }
 
-  // ---- Scoring UI ----------------------------------------------------------
-  const WEIGHTS = { m:0.40, o:0.25, q:0.20, p:0.15 };
+  const WEIGHTS={m:0.40,o:0.25,q:0.20,p:0.15};
+  function weighted(m,o,q,p){ return (m*WEIGHTS.m + o*WEIGHTS.o + q*WEIGHTS.q + p*WEIGHTS.p).toFixed(2); }
+  function getSaved(){ try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}')}catch{return{}} }
+  function saveLocal(d){ localStorage.setItem(LOCAL_KEY,JSON.stringify(d)); }
 
-  function weightedScore(m,o,q,p){
-    return (m*WEIGHTS.m + o*WEIGHTS.o + q*WEIGHTS.q + p*WEIGHTS.p).toFixed(2);
-  }
-
-  function getSaved(){
-    try{ return JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); }catch{ return {}; }
-  }
-  function saveLocal(data){
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
-  }
-
-  async function loadBandsList(){
-    // Load the same source as the public site so Blynd and future bands appear automatically
-    await new Promise((resolve)=>{
-      const s = document.createElement('script');
-      s.src = '/bands.js?v=judges';
-      s.onload = resolve;
-      s.onerror = resolve;
-      document.head.appendChild(s);
-    });
-    return Array.isArray(window.BANDS) ? window.BANDS : [];
-  }
-
-  function rowHTML(band, saved){
-    const s = saved[band.name] || { m:0,o:0,q:0,p:0, c:'' };
-    const readiness = weightedScore(s.m,s.o,s.q,s.p);
+  function bandCard(band, saved){
+    const s=saved[band.name]||{m:0,o:0,q:0,p:0,c:''};
+    const ready=weighted(s.m,s.o,s.q,s.p);
     return `
-      <div class="row" data-band="${band.name}">
-        <div class="bandcell">
-          <b>${band.name}</b>
-          <div class="bandmeta">${band.city || ''} ${band.city && band.genre ? ' · ' : ''} ${band.genre || ''}</div>
+      <article class="band" data-band="${band.name}">
+        <h3>${band.name}</h3>
+        <div class="meta">${band.city||''}${band.city&&band.genre?' · ':''}${band.genre||''}</div>
+
+        <div class="row">
+          <label>Musicianship</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.m}" data-k="m">
+            <span class="badge" data-kv="m">${s.m}</span>
+          </div>
         </div>
-        <div class="sl"><input type="range" min="0" max="10" step="1" value="${s.m}" data-k="m"><span class="badge" data-kv="m">${s.m}</span></div>
-        <div class="sl"><input type="range" min="0" max="10" step="1" value="${s.o}" data-k="o"><span class="badge" data-kv="o">${s.o}</span></div>
-        <div class="sl"><input type="range" min="0" max="10" step="1" value="${s.q}" data-k="q"><span class="badge" data-kv="q">${s.q}</span></div>
-        <div class="sl"><input type="range" min="0" max="10" step="1" value="${s.p}" data-k="p"><span class="badge" data-kv="p">${s.p}</span></div>
-        <div class="badge" data-ready>${readiness}</div>
-        <div><textarea placeholder="Comments" data-k="c">${s.c || ''}</textarea></div>
-      </div>`;
+
+        <div class="row">
+          <label>Originality</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.o}" data-k="o">
+            <span class="badge" data-kv="o">${s.o}</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Online Material Quality</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.q}" data-k="q">
+            <span class="badge" data-kv="q">${s.q}</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Online Presence</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.p}" data-k="p">
+            <span class="badge" data-kv="p">${s.p}</span>
+          </div>
+        </div>
+
+        <div class="readiness">
+          <span class="muted">Wacken Readiness</span>
+          <b data-ready>${ready}</b>
+        </div>
+
+        <div class="row">
+          <label>Comments</label>
+          <textarea data-k="c" placeholder="Optional comments">${s.c||''}</textarea>
+        </div>
+      </article>
+    `;
   }
 
   async function initScoring(){
-    const rows = document.getElementById('rows');
-    const saved = getSaved();
-    const bands = (await loadBandsList()).slice().sort((a,b)=>a.name.localeCompare(b.name));
+    const wrap=document.getElementById('bandsWrap');
+    const saved=getSaved();
+    const bands=(await loadBandsScript()).slice().sort((a,b)=>a.name.localeCompare(b.name));
+    wrap.innerHTML = bands.map(b=>bandCard(b,saved)).join('');
 
-    rows.innerHTML = bands.map(b => rowHTML(b, saved)).join('');
-
-    rows.querySelectorAll('.row').forEach(row=>{
-      const band = row.getAttribute('data-band');
-      const set = saved[band] || (saved[band] = { m:0,o:0,q:0,p:0,c:'' });
-
-      row.querySelectorAll('input[type=range]').forEach(sl=>{
-        sl.addEventListener('input', ()=>{
-          const k = sl.getAttribute('data-k');
-          set[k] = Number(sl.value);
-          row.querySelector(`[data-kv="${k}"]`).textContent = set[k];
-          row.querySelector('[data-ready]').textContent = weightedScore(set.m,set.o,set.q,set.p);
+    wrap.querySelectorAll('.band').forEach(card=>{
+      const name=card.getAttribute('data-band');
+      const set=saved[name]||(saved[name]={m:0,o:0,q:0,p:0,c:''});
+      card.querySelectorAll('input[type=range]').forEach(sl=>{
+        sl.addEventListener('input',()=>{
+          const k=sl.getAttribute('data-k');
+          set[k]=Number(sl.value);
+          card.querySelector(`[data-kv="${k}"]`).textContent=set[k];
+          card.querySelector('[data-ready]').textContent=weighted(set.m,set.o,set.q,set.p);
           saveLocal(saved);
         });
       });
-
-      const ta = row.querySelector('textarea');
-      ta.addEventListener('input', ()=>{
-        set.c = ta.value;
-        saveLocal(saved);
-      });
+      const ta=card.querySelector('textarea');
+      ta.addEventListener('input',()=>{ set.c=ta.value; saveLocal(saved); });
     });
 
-    // reset and save handlers
-    document.getElementById('btnReset').onclick = ()=>{
+    document.getElementById('btnReset').onclick=()=>{
       if(!confirm('Clear all your scores and comments locally?')) return;
       localStorage.removeItem(LOCAL_KEY);
       initScoring();
     };
 
-    document.getElementById('btnSave').onclick = async ()=>{
-      const name = nameTop.value.trim() || nameField.value.trim();
-      if(!name){ alert('Please enter your name at the top.'); return; }
-      const payload = { judge: name, scores: getSaved() };
+    document.getElementById('btnSave').onclick=async()=>{
+      const judge = (nameTop.value.trim() || document.getElementById('judgeName').value.trim());
+      if(!judge){ alert('Please enter your name at the top.'); return; }
+      const pwd = sessionStorage.getItem(PWD_KEY)||'';
+      const payload={ judge, password: pwd, scores: getSaved() };
 
-      const r = await fetch('/api/judge-save', {
+      // Use your existing API route name for saving
+      const r = await fetch('/api/submit-score', {
         method:'POST',
         headers:{'content-type':'application/json'},
         body: JSON.stringify(payload)
       });
       if(r.ok){ alert('Saved to server.'); }
-      else{ alert('Could not save. Check your password or connection.'); }
+      else { alert('Could not save. Check password/connection.'); }
     };
   }
 </script>
