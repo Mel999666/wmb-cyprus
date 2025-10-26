@@ -1,5 +1,7 @@
 // bands.js
-// Fill or edit as needed. fbPageId and igUserId only if you manage those accounts.
+// Public links plus the manual IG/FB stats you gave me.
+// Keep this file at the ROOT of the repo, same level as index.html.
+
 window.BANDS = [
   {
     name: "Black Strays",
@@ -11,12 +13,8 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/blackstraysband/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      // Facebook not available
-      instagramFollowers: 8522
-    }
+    manualStats: { facebookFollowers: 0, instagramFollowers: 8522 }
   },
-
   {
     name: "Guiltera",
     genre: "Metalcore 4. Wave",
@@ -27,12 +25,8 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/guiltera_band/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      facebookFollowers: 78,
-      instagramFollowers: 3546
-    }
+    manualStats: { facebookFollowers: 78, instagramFollowers: 3546 }
   },
-
   {
     name: "Ka'aper",
     genre: "Dark Metal",
@@ -43,29 +37,21 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/kaaper_official/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      facebookFollowers: 236,
-      instagramFollowers: 1616
-    }
+    manualStats: { facebookFollowers: 236, instagramFollowers: 1616 }
   },
-
   {
     name: "Leave the Wave",
     genre: "Hard Rock",
     city: "Nicosia",
     youtube: "https://www.youtube.com/watch?v=Ocef41DXZOk",
     facebookUrl: "https://www.facebook.com/share/1HDsTp1voH/?mibextid=wwXIfr",
-    // Their link points to YouTube Music. We will still handle it.
+    // Their link points to YouTube Music. We still handle it.
     spotify: "https://youtube.com/@leavethewave?si=V7VJqZ_srN9cxGxw",
     instagramUrl: "https://www.instagram.com/leavethewave/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      facebookFollowers: 398,
-      instagramFollowers: 1126
-    }
+    manualStats: { facebookFollowers: 398, instagramFollowers: 1126 }
   },
-
   {
     name: "LIOMENO TOU",
     genre: "Stoner Metal",
@@ -76,12 +62,8 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/liomeno.tou",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      // Facebook not available
-      instagramFollowers: 70
-    }
+    manualStats: { facebookFollowers: 0, instagramFollowers: 70 }
   },
-
   {
     name: "MARANG.",
     genre: "Progressive Metal",
@@ -92,12 +74,8 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/stephanosmarangos/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      // Facebook not available
-      instagramFollowers: 2403
-    }
+    manualStats: { facebookFollowers: 0, instagramFollowers: 2403 }
   },
-
   {
     name: "Salienzor",
     genre: "Metalcore 3. Wave",
@@ -108,29 +86,20 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/salienzor/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      facebookFollowers: 18,
-      instagramFollowers: 337
-    }
+    manualStats: { facebookFollowers: 18, instagramFollowers: 337 }
   },
-
   {
     name: "Speak In Whispers",
     genre: "Groove Metal",
     city: "Larnaka",
     youtube: "https://www.youtube.com/watch?v=AQ7C-HvyDhY",
-    // You gave an Instagram link in the facebook field. I keep it in instagramUrl.
     facebookUrl: "",
     spotify: "https://open.spotify.com/artist/61Usxx24TwxGUlTUhE2S4u",
     instagramUrl: "https://www.instagram.com/speak.in.whispers/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      facebookFollowers: 1300,
-      instagramFollowers: 1091
-    }
+    manualStats: { facebookFollowers: 1300, instagramFollowers: 1091 }
   },
-
   {
     name: "YMNKY!",
     genre: "Alternative Metal",
@@ -141,9 +110,4 @@ window.BANDS = [
     instagramUrl: "https://www.instagram.com/ymnky_band/",
     fbPageId: "",
     igUserId: "",
-    manualStats: {
-      facebookFollowers: 48,
-      instagramFollowers: 2648
-    }
-  }
-];
+    manualStats: { facebookFol
