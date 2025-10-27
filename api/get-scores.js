@@ -18,16 +18,10 @@ export default async function handler(req) {
     const resultsPw = (process.env.RESULTS_PASSWORD || '').trim();
     const adminPw   = (process.env.ADMIN_PASSWORD   || '').trim();
 
-    // Compare without revealing values
     const matchResults = !!resultsPw && pw === resultsPw;
     const matchAdmin   = !!adminPw   && pw === adminPw;
-
     if (!matchResults && !matchAdmin) {
-      return bad(
-        // helpful but safe
-        `Unauthorized: matchResults=${matchResults} matchAdmin=${matchAdmin}`,
-        401
-      );
+      return bad(`Unauthorized: matchResults=${matchResults} matchAdmin=${matchAdmin}`, 401);
     }
 
     // KV env
@@ -42,7 +36,7 @@ export default async function handler(req) {
     const keysJson = await keysRes.json();
     const keys = Array.isArray(keysJson.result) ? keysJson.result : [];
 
-    // read each key
+    // read each key and dedupe by judgeKey (or normalized judge)
     const out = {};
     for (const k of keys) {
       const g = await fetch(`${url}/get/${encodeURIComponent(k)}`, {
@@ -52,7 +46,16 @@ export default async function handler(req) {
       if (gj?.result) {
         try {
           const val = JSON.parse(gj.result);
-          if (val?.judge && val?.scores) out[val.judge] = val;
+          if (val?.scores) {
+            const jk = (val.judgeKey || String(val.judge||'').trim().toLowerCase());
+            // last write wins for that judgeKey
+            out[jk] = {
+              judge: val.judge || jk,
+              judgeKey: jk,
+              scores: val.scores,
+              ts: val.ts || 0
+            };
+          }
         } catch {}
       }
     }
