@@ -7,7 +7,8 @@
 <style>
   :root{
     --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb;
-    --line:#2b2023; --ring:rgba(255,90,31,.35)
+    --line:#2b2023; --ring:rgba(255,90,31,.35);
+    --ok:#2a6b3a; --ok-100:#2a6b3a; --ok-200:#2f7d43; --ok-900:#173e22;
   }
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0d0b0d,#080708 65%);color:var(--text);
@@ -23,9 +24,9 @@
 
   input[type=text],input[type=password]{background:#0f0d0e;border:1px solid var(--line);
     color:var(--text);padding:10px 12px;border-radius:10px;min-width:220px}
-  button{background:#2a6b3a;border:none;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer}
-  button.secondary{background:#1a1416;border:1px solid var(--line);color:#fff}
-  button.warn{background:#7a2626}
+  button{background:#1a1416;border:1px solid var(--line);color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer}
+  button.primary{background:var(--ok);border-color:var(--ok)}
+  button.warn{background:#7a2626;border-color:#7a2626}
   button:focus,input:focus,textarea:focus{outline:2px solid var(--ring);outline-offset:2px}
 
   .login{display:grid;gap:12px;max-width:560px;margin:28px auto}
@@ -39,8 +40,7 @@
   .band{border:1px solid var(--line);border-radius:14px;padding:14px;background:#120f10;margin-bottom:14px}
   .band h3{margin:0 0 4px;font-size:18px}
   .band .meta{color:var(--muted);font-size:13px;margin-bottom:8px}
-  .quick{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
-  .quick a{font-size:12px;border:1px solid var(--line);padding:6px 8px;border-radius:999px;background:#1a1416}
+  iframe{border:none;border-radius:12px;min-height:176px;background:#000;width:100%;margin:6px 0 10px}
 
   .row{display:grid;gap:8px;margin:10px 0}
   .row label{font-size:14px;font-weight:600}
@@ -57,6 +57,11 @@
 
   .topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
   .right{margin-left:auto}
+
+  /* Success notice */
+  .notice{display:none;margin-top:12px;padding:12px;border-radius:12px;border:1px solid var(--ok);
+          background:linear-gradient(180deg,var(--ok-900),#112315);color:#e6ffec}
+  .notice.show{display:block}
 </style>
 </head>
 <body>
@@ -69,9 +74,9 @@
       <p class="muted">Nothing is remembered between visits. Data only lives while this tab is open.</p>
       <input id="judgeName" type="text" placeholder="Your name e.g. Maria K." autocomplete="name">
       <input id="judgePwd" type="password" placeholder="Judge password" autocomplete="current-password">
-      <div style="display:flex;gap:10px;align-items:center">
-        <button id="btnLogin">Unlock scoring</button>
-        <button id="btnResetAll" class="secondary">Start new judge session</button>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="btnLogin" class="primary">Unlock scoring</button>
+        <button id="btnResetAll">Refresh your scores & start again</button>
         <span id="gateMsg" class="muted"></span>
       </div>
     </section>
@@ -81,10 +86,6 @@
       <div class="topbar">
         <span class="pill">Autosaves while this tab is open</span>
         <input id="judgeNameTop" type="text" placeholder="Judge name" />
-        <div class="right">
-          <button id="btnNew" class="warn">New judge session</button>
-          <button id="btnSave">Save to server</button>
-        </div>
       </div>
 
       <div class="card">
@@ -103,6 +104,15 @@
       </div>
 
       <div id="bandsWrap" class="card" style="margin-top:14px"></div>
+
+      <!-- Bottom controls -->
+      <div class="card" style="margin-top:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button id="btnNew" class="warn">Refresh your scores & start again</button>
+          <button id="btnSubmit" class="primary">Submit your Scores</button>
+        </div>
+        <div id="submitNotice" class="notice">Thank you — scores submitted.</div>
+      </div>
     </section>
   </div>
 
@@ -131,7 +141,7 @@
   async function loadBandsScript(){
     await new Promise((resolve)=>{
       const s=document.createElement('script');
-      s.src='/bands.js?v=ytlinks1';
+      s.src='/bands.js?v=yt-embed-judge1';
       s.onload=resolve; s.onerror=resolve;
       document.head.appendChild(s);
     });
@@ -184,20 +194,33 @@
   function saveLocal(d){ sessionStorage.setItem(S_SCORES,JSON.stringify(d)); }
 
   function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-  function link(label,url){ return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${label}</a>` : ''; }
+  function ytId(url){
+    if(!url) return null;
+    try{
+      const u=new URL(url.replace("music.youtube.com","www.youtube.com"));
+      const id=u.searchParams.get('v');
+      if(id) return id;
+      const parts=u.pathname.split('/').filter(Boolean);
+      const i=parts.indexOf('shorts');
+      if(i!==-1 && parts[i+1]) return parts[i+1];
+    }catch(e){}
+    return null;
+  }
 
   function bandCard(band, saved){
     const s=saved[band.name]||{m:0,o:0,q:0,p:0,c:''};
     const ready=weighted(s.m,s.o,s.q,s.p);
-
-    // Quick links row: YouTube only as requested
-    const quick = band.youtube ? `<div class="quick">${link('YouTube', band.youtube)}</div>` : '';
+    const vidId = ytId(band.youtube);
+    const yt = vidId
+      ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${vidId}"></iframe>`
+      : ``;
 
     return `
       <article class="band" data-band="${band.name}">
         <h3>${band.name}</h3>
         <div class="meta">${band.city||''}${band.city&&band.genre?' · ':''}${band.genre||''}</div>
-        ${quick}
+
+        ${yt}
 
         <div class="row">
           <label>Musicianship</label>
@@ -266,11 +289,12 @@
       ta.addEventListener('input',()=>{ set.c=ta.value; saveLocal(saved); });
     });
 
-    document.getElementById('btnSave').onclick=async()=>{
+    // bottom submit
+    document.getElementById('btnSubmit').onclick=async()=>{
       const judge = (nameTop.value.trim() || nameField.value.trim());
       if(!judge){ alert('Please enter your name at the top.'); return; }
       const pwd = sessionStorage.getItem(S_PWD)||'';
-      if(!pwd){ alert('Your session expired. Click “New judge session” and unlock again.'); return; }
+      if(!pwd){ alert('Your session expired. Click “Refresh your scores & start again” and unlock again.'); return; }
 
       const payload={ judge, password: pwd, scores: getSaved() };
       const r = await fetch('/api/submit-score', {
@@ -278,8 +302,17 @@
         headers:{'content-type':'application/json'},
         body: JSON.stringify(payload)
       });
-      if(r.ok){ alert('Saved to server.'); }
-      else { alert('Could not save. Check password/connection.'); }
+      const ok = r.ok;
+      const notice = document.getElementById('submitNotice');
+      if(ok){
+        notice.textContent = 'Thank you — scores submitted.';
+        notice.classList.add('show');
+        setTimeout(()=>notice.classList.remove('show'), 3000);
+      }else{
+        notice.textContent = 'Could not save. Check password or connection.';
+        notice.classList.add('show');
+        setTimeout(()=>notice.classList.remove('show'), 4000);
+      }
     };
   }
 </script>
