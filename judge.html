@@ -8,7 +8,7 @@
   :root{
     --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb;
     --line:#2b2023; --ring:rgba(255,90,31,.35);
-    --ok:#2a6b3a; --ok-100:#2a6b3a; --ok-200:#2f7d43; --ok-900:#173e22;
+    --ok:#2a6b3a; --ok-900:#173e22;
   }
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0d0b0d,#080708 65%);color:var(--text);
@@ -62,21 +62,34 @@
   .notice{display:none;margin-top:12px;padding:12px;border-radius:12px;border:1px solid var(--ok);
           background:linear-gradient(180deg,var(--ok-900),#112315);color:#e6ffec}
   .notice.show{display:block}
+
+  /* Back warning modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000}
+  .modal{background:#141114;border:1px solid var(--line);border-radius:14px;max-width:520px;width:92%;padding:16px}
+  .modal h3{margin:0 0 8px}
+  .modal p{margin:0 0 12px;color:var(--muted)}
+  .modal .actions{display:flex;gap:10px;justify-content:flex-end}
+  .modal-backdrop.show{display:flex}
 </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="h1">Judging Panel — Wacken Metal Battle Cyprus</h1>
+    <div class="topbar">
+      <h1 class="h1" style="margin:0">Judging Panel — Wacken Metal Battle Cyprus</h1>
+      <div class="right">
+        <a class="pill" href="/" target="_blank" rel="noopener">Open home in new tab</a>
+      </div>
+    </div>
 
     <!-- Password gate -->
     <section id="gate" class="card login">
       <h2>Enter judging password</h2>
-      <p class="muted">Nothing is remembered between visits. Data only lives while this tab is open.</p>
+      <p class="muted">Your scores autosave in this browser until you submit. If you close this page before submitting, they’ll still be here when you return and unlock again.</p>
       <input id="judgeName" type="text" placeholder="Your name e.g. Maria K." autocomplete="name">
       <input id="judgePwd" type="password" placeholder="Judge password" autocomplete="current-password">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button id="btnLogin" class="primary">Unlock scoring</button>
-        <button id="btnResetAll">Refresh your scores & start again</button>
+        <!-- Refresh button is intentionally hidden on the gate per your request -->
         <span id="gateMsg" class="muted"></span>
       </div>
     </section>
@@ -84,7 +97,7 @@
     <!-- Panel -->
     <section id="panel" class="hidden">
       <div class="topbar">
-        <span class="pill">Autosaves while this tab is open</span>
+        <span class="pill">Autosaves locally until you submit</span>
         <input id="judgeNameTop" type="text" placeholder="Judge name" />
       </div>
 
@@ -116,20 +129,25 @@
     </section>
   </div>
 
-<script>
-  // Session-only keys (cleared every load)
-  const S_AUTH='wmb.judge.auth.s';
-  const S_SCORES='wmb.judge.scores.s';
-  const S_NAME='wmb.judge.name.s';
-  const S_PWD='wmb.judge.pwd.s';
+  <!-- Back modal -->
+  <div id="backModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="backTitle">
+      <h3 id="backTitle">Leaving this page</h3>
+      <p>To not lose your current scores, <a href="/" target="_blank" rel="noopener">click here to open the home page in a new tab</a>. You can then return here and continue scoring.</p>
+      <div class="actions">
+        <button id="stayHere">Stay here</button>
+        <a href="/" target="_self" class="primary" id="goHome">Go to home</a>
+      </div>
+    </div>
+  </div>
 
-  // Clean slate on every load
-  (function hardResetOnLoad(){
-    sessionStorage.removeItem(S_AUTH);
-    sessionStorage.removeItem(S_SCORES);
-    sessionStorage.removeItem(S_NAME);
-    sessionStorage.removeItem(S_PWD);
-  })();
+<script>
+  // Local persistence (Option B)
+  const L_SCORES='wmb.judge.scores.local';
+  const L_NAME='wmb.judge.name.local';
+
+  // Password is session-only
+  const S_PWD='wmb.judge.pwd.s';
 
   const gate=document.getElementById('gate');
   const panel=document.getElementById('panel');
@@ -138,10 +156,13 @@
   const pwdField=document.getElementById('judgePwd');
   const msg=document.getElementById('gateMsg');
 
+  // Load any saved judge name on the gate
+  try{ nameField.value = localStorage.getItem(L_NAME) || ''; }catch{}
+
   async function loadBandsScript(){
     await new Promise((resolve)=>{
       const s=document.createElement('script');
-      s.src='/bands.js?v=yt-embed-judge1';
+      s.src='/bands.js?v=judge-embed-fallback1';
       s.onload=resolve; s.onerror=resolve;
       document.head.appendChild(s);
     });
@@ -161,8 +182,12 @@
   function openPanel(){
     gate.classList.add('hidden');
     panel.classList.remove('hidden');
-    nameTop.value = nameField.value || '';
-    nameTop.addEventListener('input',()=>sessionStorage.setItem(S_NAME,nameTop.value));
+    // load judge name into the top field and keep it in localStorage
+    const existingName = (nameField.value || localStorage.getItem(L_NAME) || '').trim();
+    nameTop.value = existingName;
+    nameTop.addEventListener('input',()=>{ try{ localStorage.setItem(L_NAME,nameTop.value); }catch{} });
+    try{ localStorage.setItem(L_NAME, existingName); }catch{}
+    initHistoryTrap();
   }
 
   document.getElementById('btnLogin').addEventListener('click',async()=>{
@@ -171,29 +196,29 @@
     const ok=await checkPassword(pwd);
     if(!ok){ msg.textContent='Wrong password'; return; }
     sessionStorage.setItem(S_PWD,pwd);
-    sessionStorage.setItem(S_AUTH,'1');
-    sessionStorage.setItem(S_NAME,nameField.value.trim());
     msg.textContent='Unlocked';
     openPanel();
     initScoring();
   });
 
-  function clearSessionAndReload(){
-    sessionStorage.removeItem(S_AUTH);
-    sessionStorage.removeItem(S_SCORES);
-    sessionStorage.removeItem(S_NAME);
+  function clearAllLocal(){
+    try{
+      localStorage.removeItem(L_SCORES);
+      localStorage.removeItem(L_NAME);
+    }catch{}
     sessionStorage.removeItem(S_PWD);
+  }
+  function clearAndReload(){
+    clearAllLocal();
     location.replace(location.pathname + '?new=1');
   }
-  document.getElementById('btnNew').onclick = clearSessionAndReload;
-  document.getElementById('btnResetAll').onclick = clearSessionAndReload;
+  document.getElementById('btnNew').onclick = clearAndReload;
 
   const WEIGHTS={m:0.40,o:0.25,q:0.20,p:0.15};
   function weighted(m,o,q,p){ return (m*WEIGHTS.m + o*WEIGHTS.o + q*WEIGHTS.q + p*WEIGHTS.p).toFixed(2); }
-  function getSaved(){ try{return JSON.parse(sessionStorage.getItem(S_SCORES)||'{}')}catch{return{}} }
-  function saveLocal(d){ sessionStorage.setItem(S_SCORES,JSON.stringify(d)); }
+  function getSaved(){ try{return JSON.parse(localStorage.getItem(L_SCORES)||'{}')}catch{return{}} }
+  function saveLocal(d){ try{ localStorage.setItem(L_SCORES,JSON.stringify(d)); }catch{} }
 
-  function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function ytId(url){
     if(!url) return null;
     try{
@@ -206,21 +231,39 @@
     }catch(e){}
     return null;
   }
+  function spotifyEmbed(url){
+    if(!url) return null;
+    try{
+      const u=new URL(url.replace("?si","/ignore?si"));
+      const parts=u.pathname.split('/').filter(Boolean);
+      const type=parts[0], id=parts[1];
+      if(type==='track' && id) return `https://open.spotify.com/embed/track/${id}`;
+      if(type==='artist' && id) return `https://open.spotify.com/embed/artist/${id}`;
+      if(type==='album' && id) return `https://open.spotify.com/embed/album/${id}`;
+    }catch(e){}
+    return null;
+  }
+
+  function embedBlock(band){
+    const vidId = ytId(band.youtube);
+    if(vidId){
+      return `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${vidId}"></iframe>`;
+    }
+    const sp = spotifyEmbed(band.spotify);
+    return sp ? `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${sp}"></iframe>` : '';
+  }
 
   function bandCard(band, saved){
     const s=saved[band.name]||{m:0,o:0,q:0,p:0,c:''};
     const ready=weighted(s.m,s.o,s.q,s.p);
-    const vidId = ytId(band.youtube);
-    const yt = vidId
-      ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${vidId}"></iframe>`
-      : ``;
+    const media = embedBlock(band);
 
     return `
       <article class="band" data-band="${band.name}">
         <h3>${band.name}</h3>
         <div class="meta">${band.city||''}${band.city&&band.genre?' · ':''}${band.genre||''}</div>
 
-        ${yt}
+        ${media}
 
         <div class="row">
           <label>Musicianship</label>
@@ -291,10 +334,15 @@
 
     // bottom submit
     document.getElementById('btnSubmit').onclick=async()=>{
-      const judge = (nameTop.value.trim() || nameField.value.trim());
+      const gateName = (nameField.value||'').trim();
+      const topName  = (nameTop.value||'').trim();
+      const judge = topName || gateName;
       if(!judge){ alert('Please enter your name at the top.'); return; }
       const pwd = sessionStorage.getItem(S_PWD)||'';
       if(!pwd){ alert('Your session expired. Click “Refresh your scores & start again” and unlock again.'); return; }
+
+      // Persist the latest judge name
+      try{ localStorage.setItem(L_NAME, judge); }catch{}
 
       const payload={ judge, password: pwd, scores: getSaved() };
       const r = await fetch('/api/submit-score', {
@@ -302,18 +350,51 @@
         headers:{'content-type':'application/json'},
         body: JSON.stringify(payload)
       });
-      const ok = r.ok;
+
       const notice = document.getElementById('submitNotice');
-      if(ok){
+      if(r.ok){
         notice.textContent = 'Thank you — scores submitted.';
         notice.classList.add('show');
-        setTimeout(()=>notice.classList.remove('show'), 3000);
+        setTimeout(()=>{ window.location.href = '/'; }, 1200);
       }else{
         notice.textContent = 'Could not save. Check password or connection.';
         notice.classList.add('show');
         setTimeout(()=>notice.classList.remove('show'), 4000);
       }
     };
+  }
+
+  // History back-button trap with custom modal
+  function initHistoryTrap(){
+    // push a state when panel opens so back triggers popstate
+    try{ history.pushState({wmb:'judge'}, '', location.href); }catch{}
+    const modal = document.getElementById('backModal');
+    const stay = document.getElementById('stayHere');
+
+    function showModal(){
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+    }
+    function hideModal(){
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+    }
+
+    window.addEventListener('popstate', (ev)=>{
+      // immediately push state back to neutralize navigation
+      try{ history.pushState({wmb:'judge'}, '', location.href); }catch{}
+      // only show modal if we have any scores saved
+      const saved = getSaved();
+      if (saved && Object.keys(saved).length>0) {
+        showModal();
+      } else {
+        // if nothing saved, allow navigation to home
+        window.location.href = '/';
+      }
+    });
+
+    stay.addEventListener('click', hideModal);
+    // The "Go to home" link is a normal anchor in the modal actions
   }
 </script>
 </body>
