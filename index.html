@@ -82,7 +82,7 @@
       <div class="h2">Leaderboards</div>
       <p class="lead">Top six bands for each metric. These fill from the live API where permitted.</p>
       <div class="boards">
-        <div class="board"><h3>Spotify top track popularity</h3><ol class="rank-list" id="board-spotify"></ol></div>
+        <div class="board"><h3>Artist Popularity Score on Spotify (0-100)</h3><ol class="rank-list" id="board-spotify"></ol></div>
         <div class="board"><h3>Facebook followers</h3><ol class="rank-list" id="board-facebook"></ol></div>
         <div class="board"><h3>YouTube video views</h3><ol class="rank-list" id="board-youtube"></ol></div>
         <div class="board"><h3>Instagram followers</h3><ol class="rank-list" id="board-instagram"></ol></div>
@@ -98,7 +98,7 @@
   </footer>
 
   <!-- Load band data -->
-  <script src="/bands.js?v=live3"></script>
+  <script src="/bands.js?v=artistpop1"></script>
 
   <script>
     const STATS = Object.create(null);
@@ -140,7 +140,7 @@
 
     function renderBoards(){
       const metrics = [
-        { key:'spotifyPopularity', target:'board-spotify', label:'popularity' },
+        { key:'spotifyPopularity', target:'board-spotify', label:'score' },        // changed label
         { key:'facebookFollowers', target:'board-facebook', label:'followers' },
         { key:'youtubeViews', target:'board-youtube', label:'views' },
         { key:'instagramFollowers', target:'board-instagram', label:'followers' },
@@ -195,12 +195,13 @@
               ${live}
               <div class="pill" style="margin-top:12px">Spotify</div>
               <div data-slot="spotify">Spotify player will load here</div>
+              <div class="lead" data-slot="spotifyTitle" style="margin-top:6px"></div>
             </div>
             <div class="stats">
               <div class="stat"><span>Instagram followers</span> <b data-stat="instagramFollowers">0</b></div>
               <div class="stat"><span>Facebook followers</span> <b data-stat="facebookFollowers">0</b></div>
               <div class="stat"><span>Top YouTube video views</span> <b data-stat="youtubeViews">0</b></div>
-              <div class="stat"><span>Spotify top-track popularity</span> <b data-stat="spotifyPopularity">0</b></div>
+              <div class="stat"><span>Artist Popularity Score on Spotify (0-100)</span> <b data-stat="spotifyPopularity">0</b></div>
               <div class="stat" style="display:block">
                 <div class="pill">Bio</div>
                 <p class="lead" data-slot="bio" style="margin:8px 0 0">${(b.bio||'').trim() || 'Bio will populate once connected.'}</p>
@@ -221,8 +222,10 @@
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
       if (!card) return;
       const sp = card.querySelector("[data-slot=spotify]");
+      const spTitle = card.querySelector("[data-slot=spotifyTitle]");
       const bio = card.querySelector("[data-slot=bio]");
       if (sp && data.spotifyEmbed) sp.innerHTML = `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${data.spotifyEmbed}"></iframe>`;
+      if (spTitle && data.trackName) spTitle.textContent = data.trackName;
       if (bio && data.bio) bio.textContent = data.bio;
       ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
         const el = card.querySelector(`[data-stat="${key}"]`);
@@ -235,12 +238,15 @@
     async function loadBandLive(b){
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
       const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
+
       const prev = STATS[b.name] || {};
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
+        // popularity is now ARTIST popularity from backend
         spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
-        spotifyEmbed: sp?.embedUrl ?? prev.spotifyEmbed ?? null
+        spotifyEmbed: sp?.embedUrl ?? prev.spotifyEmbed ?? null,
+        trackName: sp?.trackName ?? prev.trackName ?? null
       };
       patchBandCard(b.name);
     }
@@ -251,11 +257,11 @@
     }
 
     // initial render
+    document.getElementById('year').textContent = new Date().getFullYear();
     renderSummary();
     renderBands();
     applyManualStats();
     renderBoards();
-    document.getElementById('year').textContent = new Date().getFullYear();
     loadAllLive();
   </script>
 </body>
