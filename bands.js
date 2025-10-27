@@ -51,7 +51,7 @@ window.BANDS = [
     youtube: "https://www.youtube.com/watch?v=Ocef41DXZOk",
     liveYoutube: "", // removed duplicate live embed
     facebookUrl: "https://www.facebook.com/share/1HDsTp1voH/?mibextid=wwXIfr",
-    spotify: "https://spotify.link/vrEkGmAnJXb",
+    spotify: "https://open.spotify.com/track/1G9kUMEaLa0SJufwgMwBu8?si=340029f3df8d404b",
     instagramUrl: "https://www.instagram.com/leavethewave/",
     otherLinks: [],
     bio: "Rock band based in Nicosia, CY",
