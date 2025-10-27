@@ -6,31 +6,76 @@ export default async function handler(req, res) {
     const token = await getSpotifyToken();
     const { type, id } = parseSpotifyUrl(url);
 
-    if (!type || !id) return res.status(200).json({ embedUrl: null, popularity: 0, trackName: null });
-
-    if (type === "track") {
-      const track = await fetchJSON(`https://api.spotify.com/v1/tracks/${id}`, token);
+    if (!type || !id) {
       return res.status(200).json({
-        embedUrl: `https://open.spotify.com/embed/track/${id}`,
-        popularity: track?.popularity ?? 0,
-        trackName: track?.name ?? null
+        embedUrl: null,
+        popularity: 0,          // artist popularity (always)
+        trackName: null,
+        artistName: null
       });
     }
+
+    // We will always compute ARTIST popularity, regardless of link type.
+    // But for the embed we keep the previous behavior:
+    // - artist link -> embed their most popular track in the given market
+    // - track link  -> embed that exact track
+    let artistId = null;
+    let embedUrl = null;
+    let trackName = null;
 
     if (type === "artist") {
-      const top = await fetchJSON(`https://api.spotify.com/v1/artists/${id}/top-tracks?market=${market}`, token);
+      artistId = id;
+      // Pick top track for embed
+      const top = await fetchJSON(
+        `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=${market}`,
+        token
+      );
       const best = (top?.tracks || []).sort((a,b) => b.popularity - a.popularity)[0];
-      if (!best) return res.status(200).json({ embedUrl: null, popularity: 0, trackName: null });
+      if (best) {
+        embedUrl = `https://open.spotify.com/embed/track/${best.id}`;
+        trackName = best.name || null;
+      }
+    } else if (type === "track") {
+      // Get the track, derive artist from it, embed this exact track
+      const track = await fetchJSON(
+        `https://api.spotify.com/v1/tracks/${id}`,
+        token
+      );
+      embedUrl = `https://open.spotify.com/embed/track/${id}`;
+      trackName = track?.name ?? null;
+      artistId = Array.isArray(track?.artists) && track.artists[0]?.id ? track.artists[0].id : null;
+    }
+
+    // If we still don't have an artist id, return empty
+    if (!artistId) {
       return res.status(200).json({
-        embedUrl: `https://open.spotify.com/embed/track/${best.id}`,
-        popularity: best.popularity,
-        trackName: best.name
+        embedUrl,
+        popularity: 0,
+        trackName,
+        artistName: null
       });
     }
 
-    return res.status(200).json({ embedUrl: null, popularity: 0, trackName: null });
+    // Fetch ARTIST popularity (0-100) — this is the number we will always return
+    const artist = await fetchJSON(
+      `https://api.spotify.com/v1/artists/${artistId}`,
+      token
+    );
+
+    return res.status(200).json({
+      embedUrl,
+      popularity: Number.isFinite(artist?.popularity) ? artist.popularity : 0,
+      trackName,
+      artistName: artist?.name ?? null
+    });
+
   } catch (e) {
-    return res.status(200).json({ embedUrl: null, popularity: 0, trackName: null });
+    return res.status(200).json({
+      embedUrl: null,
+      popularity: 0,
+      trackName: null,
+      artistName: null
+    });
   }
 }
 
@@ -57,7 +102,7 @@ async function fetchJSON(url, token) {
 
 function parseSpotifyUrl(raw) {
   try {
-    const u = new URL(raw.replace("?si","/ignore?si"));
+    const u = new URL(raw.replace("?si","/ignore?si")); // tolerate ?si param
     const parts = u.pathname.split("/").filter(Boolean);
     return { type: parts[0], id: parts[1] };
   } catch {
