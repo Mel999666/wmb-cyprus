@@ -46,6 +46,7 @@
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
     footer{border-top:1px solid #2b2023;color:var(--muted)}
+    .muted{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -97,7 +98,7 @@
   </footer>
 
   <!-- Load band data -->
-  <script src="/bands.js?v=live2"></script>
+  <script src="/bands.js?v=live3"></script>
 
   <script>
     const STATS = Object.create(null);
@@ -159,34 +160,39 @@
     function bandCardHTML(b){
       const featuredId = ytId(b.youtube);
       const liveId = ytId(b.liveYoutube);
-      const featured = featuredId ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>` : `<div class="stat">No featured video</div>`;
-      const live = liveId ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>` : ``;
 
+      const sameVideo = featuredId && liveId && featuredId === liveId;
+      const featured = featuredId
+        ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>`
+        : `<div class="stat">No featured video</div>`;
+      const live = liveId && !sameVideo
+        ? `<div class="subhead">Live video</div><iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>`
+        : ``;
+
+      // Socials + Website inline
+      const websiteUrl = Array.isArray(b.otherLinks) && b.otherLinks.length ? b.otherLinks[0] : "";
       const socials = [
         link('Spotify', b.spotify),
         link('Facebook', b.facebookUrl),
         link('YouTube', b.youtube),
-        link('Instagram', b.instagramUrl)
+        link('Instagram', b.instagramUrl),
+        websiteUrl ? link('Website', websiteUrl) : ''
       ].filter(Boolean).join(' ');
-
-      const others = Array.isArray(b.otherLinks) && b.otherLinks.length
-        ? b.otherLinks.map(u=>link('Link', u)).join(' ')
-        : '';
 
       return `
         <article class="band-card" data-band="${b.name}">
           <div class="band-head">
-            <div class="band-name">${b.name}</div>
-            <div class="links">
-              ${socials}
-              ${others ? `<span class="pill">Other links</span> ${others}` : ''}
+            <div>
+              <div class="band-name">${b.name}</div>
+              <div class="muted">${b.city ? b.city+" · " : ""}${b.genre||""}</div>
             </div>
+            <div class="links">${socials}</div>
           </div>
           <div class="band-body">
             <div>
               <div class="pill">Featured video</div>
               ${featured}
-              ${live ? `<div class="subhead">Live video</div>${live}` : ``}
+              ${live}
               <div class="pill" style="margin-top:12px">Spotify</div>
               <div data-slot="spotify">Spotify player will load here</div>
             </div>
