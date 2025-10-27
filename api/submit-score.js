@@ -26,14 +26,18 @@ export default async function handler(req) {
     if (!judge) return bad('Missing judge name');
     if (typeof scores !== 'object') return bad('Invalid scores payload');
 
+    // Normalize judge key (lowercase)
+    const judgeKey = judge.toLowerCase();
+
     // Upstash REST env
     const url = (process.env.KV_REST_API_URL || '').trim();
     const token = (process.env.KV_REST_API_TOKEN || '').trim();
     if (!url || !token) return bad('KV not configured', 500);
 
-    // Write per-judge key
-    const key = `wmb:scores:${judge}`;
-    const value = encodeURIComponent(JSON.stringify({ judge, scores, ts: Date.now() }));
+    // Write per-judge-key
+    const key = `wmb:scores:${judgeKey}`;
+    const payload = { judge, judgeKey, scores, ts: Date.now() };
+    const value = encodeURIComponent(JSON.stringify(payload));
 
     const r = await fetch(`${url}/set/${encodeURIComponent(key)}/${value}`, {
       method: 'POST',
