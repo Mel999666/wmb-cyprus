@@ -10,11 +10,11 @@
       --bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;
       --red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35);
       --green:#2a6b3a;
-      /* Antique gold palette */
-      --gold-1:#d9bf77;   /* light */
-      --gold-2:#a17b24;   /* mid */
-      --gold-3:#7b5d16;   /* deep edge */
-      --gold-text:#d5c27a; /* readable gold for headings */
+      /* Maroon gradient (lighter -> base -> deep) */
+      --maroon-1:#e05563;
+      --maroon-2:#c21a25;
+      --maroon-3:#8f1220;
+      --maroon-text:#d86a74; /* readable maroon for headings */
     }
     *{box-sizing:border-box}
     body{
@@ -42,7 +42,7 @@
       border:1px solid #2b2023;border-radius:16px;padding:20px;
       box-shadow:0 18px 40px rgba(0,0,0,.45)
     }
-    .h2{font-size:22px;margin:0 0 10px;font-weight:800} /* keep bold & white */
+    .h2{font-size:22px;margin:0 0 10px;font-weight:800}
     .lead{color:var(--muted)}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
@@ -54,11 +54,11 @@
     .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
     @media (max-width:800px){.boards{grid-template-columns:1fr}}
 
-    /* Leaderboard sub-headings in antique gold, not bold */
+    /* Leaderboard sub-headings in maroon and bold */
     .board h3{
       margin:0 0 8px;
-      color:var(--gold-text);
-      font-weight:400;
+      color:var(--maroon-text);
+      font-weight:700;
     }
 
     .rank-list{list-style:none;margin:0;padding:0}
@@ -91,16 +91,16 @@
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
 
-    /* Top-right nav buttons: antique gold gradient, white non-bold text */
+    /* Top-right nav buttons: maroon gradient, white text */
     .nav-btn{
       display:inline-flex;align-items:center;gap:8px;
-      background:linear-gradient(135deg,var(--gold-1),var(--gold-2) 55%,var(--gold-3));
+      background:linear-gradient(135deg,var(--maroon-1),var(--maroon-2) 55%,var(--maroon-3));
       color:#fff; border:1px solid #2b2023;
-      padding:10px 14px; border-radius:12px; font-weight:400; font-size:15px;
+      padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
     }
-    .nav-btn:hover{filter:brightness(1.03)}
+    .nav-btn:hover{filter:brightness(1.04)}
 
-    /* Big green CTA unchanged */
+    /* CTA stays green */
     .cta{
       display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;
       border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700
