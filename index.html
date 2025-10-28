@@ -54,12 +54,12 @@
     .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
     @media (max-width:800px){.boards{grid-template-columns:1fr}}
 
-    /* Leaderboard sub-headings in maroon and bold */
-  .board h3{
-  margin:0 0 8px;
-  color:#fff;           /* make headings white */
-  font-weight:700;
-}
+    /* Leaderboard sub-headings white */
+    .board h3{
+      margin:0 0 8px;
+      color:#fff;
+      font-weight:700;
+    }
 
     .rank-list{list-style:none;margin:0;padding:0}
     .rank-list li{
@@ -91,16 +91,15 @@
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
 
-    /* Top-right nav buttons: maroon gradient, white text */
-   .nav-btn{
-  display:inline-flex;align-items:center;gap:8px;
-  background: var(--maroon-3);          /* same maroon family as headings */
-  color:#fff;
-  border:1px solid var(--maroon-3);     /* slightly deeper maroon for edge */
-  padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
-}
-.nav-btn:hover{ filter: brightness(1.05); }
-    .nav-btn:hover{filter:brightness(1.04)}
+    /* Top-right nav buttons use maroon-3 */
+    .nav-btn{
+      display:inline-flex;align-items:center;gap:8px;
+      background: var(--maroon-3);
+      color:#fff;
+      border:1px solid var(--maroon-3);
+      padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
+    }
+    .nav-btn:hover{ filter: brightness(1.05); }
 
     /* CTA stays green */
     .cta{
@@ -161,22 +160,15 @@
     </div>
   </footer>
 
-  <script src="/bands.js?v=artistpop1"></script>
+  <!-- IMPORTANT: bump version so the browser picks up the new band fields -->
+  <script src="/bands.js?v=artistpop2"></script>
   <script>
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
 
-    function applyManualStats() {
-      for (const b of BANDS) {
-        if (!b.manualStats) continue;
-        if (!STATS[b.name]) STATS[b.name] = {};
-        const m = b.manualStats;
-        if (Number.isFinite(m.instagramFollowers)) STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
-        if (Number.isFinite(m.facebookFollowers)) STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
-        if (typeof b.bio === "string" && b.bio.trim()) STATS[b.name].bio = b.bio.trim();
-      }
-    }
+    /* ---------- helpers ---------- */
     function byName(a,b){ return a.name.localeCompare(b.name); }
+
     function ytId(url){
       if(!url) return null;
       try{
@@ -189,6 +181,7 @@
       }catch(e){}
       return null;
     }
+
     function spotifyTrackEmbedFromUrl(raw){
       try{
         const u = new URL(raw.replace("?si","/ignore?si"));
@@ -199,12 +192,59 @@
       }catch{}
       return null;
     }
+
+    function isSpotifyArtistUrl(u){
+      try{
+        const x = new URL(u);
+        return x.hostname.includes("open.spotify.com") && x.pathname.startsWith("/artist/");
+      }catch{return false;}
+    }
+
+    /* ---------- manual stats/bios ---------- */
+    function applyManualStats() {
+      for (const b of BANDS) {
+        if (!b.manualStats) continue;
+        if (!STATS[b.name]) STATS[b.name] = {};
+        const m = b.manualStats;
+        if (Number.isFinite(m.instagramFollowers)) STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
+        if (Number.isFinite(m.facebookFollowers)) STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
+        // prefer manualStats.bio, else b.bio
+        const bioText = (typeof m.bio === "string" && m.bio.trim())
+            ? m.bio.trim()
+            : (typeof b.bio === "string" && b.bio.trim() ? b.bio.trim() : "");
+        if (bioText) STATS[b.name].bio = bioText;
+      }
+    }
+
+    function patchBandCard(name){
+      const data = STATS[name] || {};
+      const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
+      if (!card) return;
+      const sp = card.querySelector("[data-slot=spotify]");
+      const spTitle = card.querySelector("[data-slot=spotifyTitle]");
+      const bio = card.querySelector("[data-slot=bio]");
+      if (sp && data.spotifyEmbed) sp.innerHTML = `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${data.spotifyEmbed}"></iframe>`;
+      if (spTitle && data.trackName) spTitle.textContent = data.trackName;
+      if (bio && data.bio) bio.textContent = data.bio;
+      ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
+        const el = card.querySelector(`[data-stat="${key}"]`);
+        if (el) el.textContent = (data[key] || 0).toLocaleString();
+      });
+    }
+
+    function patchAllCardsFromStats(){
+      for (const b of BANDS) patchBandCard(b.name);
+    }
+
+    /* ---------- render ---------- */
     function renderSummary(){
       document.getElementById('totalCount').textContent = BANDS.length;
       const tb = document.getElementById('alphabetical');
       tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
     }
+
     function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
+
     function renderBoards(){
       const metrics = [
         { key:'spotifyPopularity', target:'board-spotify', label:'score' },
@@ -221,25 +261,31 @@
           list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
       });
     }
+
     function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
+
     function bandCardHTML(b){
       const featuredId = ytId(b.youtube);
-      const liveId = ytId(b.liveYoutube);
+      const liveId = ytId(b.liveYoutube || b.liveVideo || b.live);
       const sameVideo = featuredId && liveId && featuredId === liveId;
+
       const featured = featuredId
         ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>`
         : `<div class="stat">No featured video</div>`;
+
       const live = liveId && !sameVideo
         ? `<div class="subhead">Live video</div><iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>`
         : ``;
+
       const websiteUrl = Array.isArray(b.otherLinks) && b.otherLinks.length ? b.otherLinks[0] : "";
       const socials = [
-        link('Spotify', b.spotify),
+        link('Spotify', b.spotifyArtist || b.spotify),
         link('Facebook', b.facebookUrl),
         link('YouTube', b.youtube),
         link('Instagram', b.instagramUrl),
         websiteUrl ? link('Website', websiteUrl) : ''
       ].filter(Boolean).join(' ');
+
       return `
         <article class="band-card" data-band="${b.name}">
           <div class="band-head">
@@ -271,32 +317,36 @@
           </div>
         </article>`;
     }
+
     function renderBands(){
       const wrap = document.getElementById('bands');
       wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
     }
-    function patchBandCard(name){
-      const data = STATS[name] || {};
-      const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
-      if (!card) return;
-      const sp = card.querySelector("[data-slot=spotify]");
-      const spTitle = card.querySelector("[data-slot=spotifyTitle]");
-      const bio = card.querySelector("[data-slot=bio]");
-      if (sp && data.spotifyEmbed) sp.innerHTML = `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${data.spotifyEmbed}"></iframe>`;
-      if (spTitle && data.trackName) spTitle.textContent = data.trackName;
-      if (bio && data.bio) bio.textContent = data.bio;
-      ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
-        const el = card.querySelector(`[data-stat="${key}"]`);
-        if (el) el.textContent = (data[key] || 0).toLocaleString();
-      });
+
+    /* ---------- live data ---------- */
+    async function getJSON(u){
+      try{ const r = await fetch(u); return await r.json(); }
+      catch{ return null; }
     }
-    async function getJSON(u){ try{ const r = await fetch(u); return await r.json(); }catch{ return null; } }
+
     async function loadBandLive(b){
+      // YouTube top view count from featured video
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
-      const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
+
+      // Popularity must come from ARTIST url only
+      const artistUrl =
+        (b.spotifyArtist && isSpotifyArtistUrl(b.spotifyArtist)) ? b.spotifyArtist :
+        (b.spotify && isSpotifyArtistUrl(b.spotify)) ? b.spotify :
+        null;
+
+      const sp = artistUrl
+        ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(artistUrl)}&market=CY`)
+        : null;
+
       const prev = STATS[b.name] || {};
-      let forcedEmbed = null;
-      if (b.spotifyEmbedTrack) forcedEmbed = spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack);
+      // Embed always prefers the explicit track given
+      const forcedEmbed = b.spotifyEmbedTrack ? spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack) : null;
+
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
@@ -304,14 +354,23 @@
         spotifyEmbed: forcedEmbed || sp?.embedUrl || prev.spotifyEmbed || null,
         trackName: sp?.trackName ?? prev.trackName ?? null
       };
+
       patchBandCard(b.name);
     }
+
     async function loadAllLive(){
       await Promise.all(BANDS.map(loadBandLive));
       renderBoards();
     }
+
+    /* ---------- boot ---------- */
     document.getElementById('year').textContent = new Date().getFullYear();
-    renderSummary(); renderBands(); applyManualStats(); renderBoards(); loadAllLive();
+    renderSummary();
+    renderBands();
+    applyManualStats();       // put your manual bios and numbers in STATS
+    patchAllCardsFromStats(); // immediately reflect bios on the cards
+    renderBoards();
+    loadAllLive();            // then hydrate live metrics + embeds
   </script>
 </body>
 </html>
