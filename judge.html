@@ -8,21 +8,21 @@
   :root{
     --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb;
     --line:#2b2023; --ring:rgba(255,90,31,.35);
-    /* maroon palette used on main site */
-    --maroon-1:#c01722; /* lighter top */
-    --maroon-2:#8b0f17; /* deeper bottom */
-    --maroon-border:#6b0c12;
+    --maroon-1:#c01722; --maroon-2:#8b0f17; --maroon-border:#6b0c12;
+    --card-bg:#120f10; /* matches main page band cards */
+    --pill-bg:#1a1416;
+    --link:#ff5a1f;
+    --ok:#2a6b3a; --ok-border:#1f4e2b;
   }
   *{box-sizing:border-box}
   body{
-    margin:0;
-    background:linear-gradient(180deg,#0d0b0d,#080708 65%);
+    margin:0; background:linear-gradient(180deg,#0d0b0d,#080708 65%);
     color:var(--text);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
   }
-  .container{max-width:900px;margin:0 auto;padding:20px}
+  .container{max-width:1140px;margin:0 auto;padding:20px}
 
-  /* default card (kept the same as before) */
+  /* Generic card */
   .card{
     background:linear-gradient(180deg,#181316,#110f10);
     border:1px solid var(--line);
@@ -31,26 +31,19 @@
     box-shadow:0 18px 40px rgba(0,0,0,.45)
   }
 
-  /* password gate card ONLY gets the maroon gradient + improved contrast */
+  /* Password gate in maroon */
   #gate.card{
     background:linear-gradient(180deg,var(--maroon-1),var(--maroon-2));
-    border-color:var(--maroon-border);
-    color:#fff;
+    border-color:var(--maroon-border); color:#fff;
   }
-  #gate .muted{ color:#ffe7e1 }            /* softer hint text inside gate */
-  #gate h2{ color:#fff; margin:0 }          /* heading remains bright */
-  #gate input[type=text],
-  #gate input[type=password]{
-    background:rgba(0,0,0,.25);
-    border:1px solid rgba(255,255,255,.18);
-    color:#fff;
+  #gate h2{margin:0}
+  #gate input[type=text], #gate input[type=password]{
+    background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.2); color:#fff;
   }
-  #gate input::placeholder{ color:rgba(255,255,255,.75) }
+  #gate input::placeholder{color:rgba(255,255,255,.8)}
 
-  .h1{font-size:clamp(20px,2.6vw,30px);font-weight:800;margin:0 0 8px}
+  .h1{font-size:clamp(22px,3.2vw,34px);font-weight:800;margin:0 0 6px}
   .muted{color:var(--muted)}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
-        background:#1a1416;border:1px solid var(--line);color:#ccc;font-size:12px}
   a{color:#ffd7c3;text-decoration:none}
 
   input[type=text],input[type=password]{background:#0f0d0e;border:1px solid var(--line);
@@ -61,16 +54,18 @@
   button:focus,input:focus,textarea:focus{outline:2px solid var(--ring);outline-offset:2px}
 
   .login{display:grid;gap:12px;max-width:560px;margin:28px auto}
-  .login h2{margin:0}
   .hidden{display:none}
 
-  .explainer{display:grid;gap:10px;margin:12px 0}
-  .ex-row{display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#130f10}
-  .ex-row b{font-weight:700}
-
-  .band{border:1px solid var(--line);border-radius:14px;padding:14px;background:#120f10;margin-bottom:14px}
-  .band h3{margin:0 0 4px;font-size:18px}
-  .band .meta{color:var(--muted);font-size:13px;margin-bottom:8px}
+  /* ===== Band card styling to mirror main page ===== */
+  .band{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card-bg);margin-bottom:18px}
+  .band-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;
+    background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)}
+  .band-name{font-weight:800;font-size:18px}
+  .band-meta{color:var(--muted);font-size:13px}
+  .band-body{padding:14px 16px;display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+  @media (max-width:900px){ .band-body{grid-template-columns:1fr;}}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:var(--pill-bg);border:1px solid var(--line);color:#ccc;font-size:12px}
+  iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
 
   .row{display:grid;gap:8px;margin:10px 0}
   .row label{font-size:14px;font-weight:600}
@@ -78,24 +73,47 @@
   .control input[type=range]{width:100%}
   .badge{background:#1a1416;border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:48px;text-align:center}
 
-  .readiness{display:flex;justify-content:space-between;align-items:center;margin-top:8px;
-             border-top:1px solid var(--line);padding-top:10px}
+  .stats{display:grid;gap:8px}
+  .stat{display:flex;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#100d0e}
+  .stat b{font-weight:700}
+
+  .readiness{display:flex;justify-content:space-between;align-items:center;margin-top:8px;border-top:1px solid var(--line);padding-top:10px}
   .readiness b{font-size:16px}
 
-  textarea{width:100%;min-height:70px;resize:vertical;background:#0f0d0e;border:1px solid var(--line);
-           color:#fff;border-radius:10px;padding:10px}
+  textarea{width:100%;min-height:70px;resize:vertical;background:#0f0d0e;border:1px solid var(--line);color:#fff;border-radius:10px;padding:10px}
 
+  /* Explainers as maroon chips with rounded corners */
+  .explainers{display:grid;gap:10px;margin:12px 0}
+  .ex-item{display:grid;gap:6px;border:1px solid var(--maroon-border);border-radius:12px;padding:12px;
+           background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))}
+  .ex-item b{font-weight:800}
+
+  .weighting-line{font-weight:800;font-style:italic;margin:10px 0 0}
+
+  /* Bottom action bar */
   .bottom-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:14px}
 
-  /* Overlay for back-warning */
+  /* Back-warning overlay */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999}
-  .overlay .box{background:#181316;border:1px solid var(--line);border-radius:14px;padding:16px;max-width:520px}
+  .overlay .box{background:#181316;border:1px solid var(--line);border-radius:14px;padding:16px;max-width:560px}
   .overlay .box h3{margin:0 0 8px}
+
+  /* Centered success modal */
+  .success-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10000}
+  .success-modal .inner{background:var(--ok);border:1px solid var(--ok-border);color:#fff;padding:18px 22px;border-radius:14px;font-size:18px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+
+  /* Ranking table (judge preview) */
+  .rank-card{margin-top:16px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line)}
+  thead th{font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))}
+  .right{text-align:right}
 </style>
 </head>
 <body>
   <div class="container">
     <h1 class="h1">Judging Panel — Wacken Metal Battle Cyprus</h1>
+    <p class="weighting-line">Score each band from 0 to 10. Wacken Readiness is a weighted score: 40% Musicianship, 25% Originality, 20% Online Material Quality, 15% Online Presence.</p>
 
     <!-- Password gate -->
     <section id="gate" class="card login">
@@ -111,25 +129,40 @@
     <!-- Panel -->
     <section id="panel" class="hidden">
       <div class="card">
-        <div class="explainer">
-          <div class="ex-row"><b>Musicianship 40 percent</b>
-            <div>Technical skill, timing, tightness, vocal control, compositional ability.</div></div>
-          <div class="ex-row"><b>Originality 25 percent</b>
-            <div>Distinctive sound or concept, songwriting ideas, creativity, not derivative.</div></div>
-          <div class="ex-row"><b>Online Material Quality 20 percent</b>
-            <div>Quality of videos and recordings, presentation, professionalism of artwork or photos.</div></div>
-          <div class="ex-row"><b>Online Presence 15 percent</b>
-            <div>Engagement and following across platforms, posting consistency, communication with fans.</div></div>
+        <div class="explainers">
+          <div class="ex-item"><b>Musicianship 40%</b><div>Technical skill, timing, tightness, vocal control, compositional ability.</div></div>
+          <div class="ex-item"><b>Originality 25%</b><div>Distinctive sound or concept, songwriting ideas, creativity, not derivative.</div></div>
+          <div class="ex-item"><b>Online Material Quality 20%</b><div>Quality of videos and recordings, presentation, professionalism of artwork or photos.</div></div>
+          <div class="ex-item"><b>Online Presence 15%</b><div>Engagement and following across platforms, posting consistency, communication with fans.</div></div>
         </div>
-        <p class="muted">Score each band from 0 to 10. Wacken Readiness is a weighted score:
-          40 percent Musicianship, 25 percent Originality, 20 percent Online Material Quality, 15 percent Online Presence.</p>
       </div>
 
-      <div id="bandsWrap" class="card" style="margin-top:14px"></div>
+      <div id="bandsWrap"></div>
+
+      <!-- Judge ranking preview (hidden until all bands touched) -->
+      <section id="rankPreview" class="card rank-card hidden">
+        <h3 style="margin:0 0 10px">Your current ranking (by Wacken Readiness)</h3>
+        <div style="overflow:auto">
+          <table aria-label="Judge ranking table">
+            <thead>
+              <tr>
+                <th>Band</th>
+                <th class="right">Musicianship</th>
+                <th class="right">Originality</th>
+                <th class="right">Material</th>
+                <th class="right">Presence</th>
+                <th class="right">Readiness</th>
+              </tr>
+            </thead>
+            <tbody id="rankBody"></tbody>
+          </table>
+        </div>
+      </section>
 
       <div class="card bottom-actions">
         <input id="judgeNameTop" type="text" placeholder="Judge name" />
         <button id="btnResetSliders" class="warn">Refresh your scores & start again</button>
+        <button id="btnDownload" class="secondary">Download your completed scoring card</button>
         <button id="btnSave">Submit your Scores</button>
       </div>
     </section>
@@ -144,6 +177,11 @@
         <button id="stayBtn">Stay on this page</button>
       </div>
     </div>
+  </div>
+
+  <!-- centered success modal -->
+  <div id="successModal" class="success-modal">
+    <div class="inner">Thank you — scores submitted</div>
   </div>
 
 <script>
@@ -162,6 +200,10 @@
 
   const backOverlay=document.getElementById('backOverlay');
   const stayBtn=document.getElementById('stayBtn');
+  const successModal=document.getElementById('successModal');
+
+  const rankPreview=document.getElementById('rankPreview');
+  const rankBody=document.getElementById('rankBody');
 
   function saveLocal(d){ sessionStorage.setItem(S_SCORES,JSON.stringify(d)); }
   function getSaved(){ try{return JSON.parse(sessionStorage.getItem(S_SCORES)||'{}')}catch{return{}} }
@@ -175,7 +217,7 @@
   async function loadBands(){
     await new Promise((resolve)=>{
       const s=document.createElement('script');
-      s.src='/bands.js?v=judges-embed1';
+      s.src='/bands.js?v=judges-embed2';
       s.onload=resolve; s.onerror=resolve;
       document.head.appendChild(s);
     });
@@ -235,15 +277,14 @@
     try{
       const u = new URL(raw.replace("?si","/ignore?si"));
       const parts = u.pathname.split("/").filter(Boolean);
-      if (parts[0] === "track" && parts[1]) {
-        return `https://open.spotify.com/embed/track/${parts[1]}`;
-      }
-      if (parts[0] === "artist" && parts[1]) {
-        return `https://open.spotify.com/embed/artist/${parts[1]}`;
-      }
+      if (parts[0] === "track" && parts[1]) return `https://open.spotify.com/embed/track/${parts[1]}`;
+      if (parts[0] === "artist" && parts[1]) return `https://open.spotify.com/embed/artist/${parts[1]}`;
     }catch{}
     return null;
   }
+
+  // track “touched” sliders to know when every band has been attended
+  let touched = {}; // { bandName: {m:true,o:true,q:true,p:true} }
 
   function bandCard(band, saved){
     const s=saved[band.name]||{m:0,o:0,q:0,p:0,c:''};
@@ -260,52 +301,55 @@
     }
 
     return `
-      <article class="band" data-band="${esc(band.name)}">
-        <h3>${esc(band.name)}</h3>
-        <div class="meta">${esc(band.city||'')}${band.city&&band.genre?' · ':''}${esc(band.genre||'')}</div>
-
-        ${media ? `<div class="row"><div class="pill">Featured media</div>${media}</div>` : ''}
-
-        <div class="row">
-          <label>Musicianship</label>
-          <div class="control">
-            <input type="range" min="0" max="10" step="1" value="${s.m}" data-k="m">
-            <span class="badge" data-kv="m">${s.m}</span>
+      <article class="band">
+        <div class="band-head">
+          <div>
+            <div class="band-name">${esc(band.name)}</div>
+            <div class="band-meta">${esc(band.city||'')}${band.city&&band.genre?' · ':''}${esc(band.genre||'')}</div>
           </div>
         </div>
-
-        <div class="row">
-          <label>Originality</label>
-          <div class="control">
-            <input type="range" min="0" max="10" step="1" value="${s.o}" data-k="o">
-            <span class="badge" data-kv="o">${s.o}</span>
+        <div class="band-body">
+          <div>
+            ${media ? `<div class="pill" style="margin-bottom:6px">Featured media</div>${media}` : ''}
           </div>
-        </div>
-
-        <div class="row">
-          <label>Online Material Quality</label>
-          <div class="control">
-            <input type="range" min="0" max="10" step="1" value="${s.q}" data-k="q">
-            <span class="badge" data-kv="q">${s.q}</span>
+          <div class="stats">
+            <div class="row">
+              <label>Musicianship</label>
+              <div class="control">
+                <input type="range" min="0" max="10" step="1" value="${s.m}" data-k="m" data-band="${esc(band.name)}">
+                <span class="badge" data-kv="m" data-band="${esc(band.name)}">${s.m}</span>
+              </div>
+            </div>
+            <div class="row">
+              <label>Originality</label>
+              <div class="control">
+                <input type="range" min="0" max="10" step="1" value="${s.o}" data-k="o" data-band="${esc(band.name)}">
+                <span class="badge" data-kv="o" data-band="${esc(band.name)}">${s.o}</span>
+              </div>
+            </div>
+            <div class="row">
+              <label>Online Material Quality</label>
+              <div class="control">
+                <input type="range" min="0" max="10" step="1" value="${s.q}" data-k="q" data-band="${esc(band.name)}">
+                <span class="badge" data-kv="q" data-band="${esc(band.name)}">${s.q}</span>
+              </div>
+            </div>
+            <div class="row">
+              <label>Online Presence</label>
+              <div class="control">
+                <input type="range" min="0" max="10" step="1" value="${s.p}" data-k="p" data-band="${esc(band.name)}">
+                <span class="badge" data-kv="p" data-band="${esc(band.name)}">${s.p}</span>
+              </div>
+            </div>
+            <div class="readiness">
+              <span class="muted">Wacken Readiness</span>
+              <b data-ready data-band="${esc(band.name)}">${ready}</b>
+            </div>
+            <div class="row">
+              <label>Comments</label>
+              <textarea data-k="c" data-band="${esc(band.name)}" placeholder="Optional comments">${esc(s.c||'')}</textarea>
+            </div>
           </div>
-        </div>
-
-        <div class="row">
-          <label>Online Presence</label>
-          <div class="control">
-            <input type="range" min="0" max="10" step="1" value="${s.p}" data-k="p">
-            <span class="badge" data-kv="p">${s.p}</span>
-          </div>
-        </div>
-
-        <div class="readiness">
-          <span class="muted">Wacken Readiness</span>
-          <b data-ready>${ready}</b>
-        </div>
-
-        <div class="row">
-          <label>Comments</label>
-          <textarea data-k="c" placeholder="Optional comments">${esc(s.c||'')}</textarea>
         </div>
       </article>
     `;
@@ -317,6 +361,37 @@
       if ((v.m|0)!==0 || (v.o|0)!==0 || (v.q|0)!==0 || (v.p|0)!==0 || (v.c||'').trim()!=='') return true;
     }
     return false;
+  }
+
+  function allBandsTouchedAll(bands){
+    return bands.every(b=>{
+      const t=touched[b.name];
+      return t && t.m && t.o && t.q && t.p;
+    });
+  }
+
+  function renderRankPreview(bands){
+    const saved = getSaved();
+    const rows = bands.map(b=>{
+      const s=saved[b.name]||{m:0,o:0,q:0,p:0};
+      return {
+        band:b.name,
+        m:+s.m||0, o:+s.o||0, q:+s.q||0, p:+s.p||0,
+        r:+weighted(+s.m||0,+s.o||0,+s.q||0,+s.p||0)
+      };
+    }).sort((a,b)=>b.r-a.r);
+
+    rankBody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${esc(r.band)}</td>
+        <td class="right">${r.m.toFixed(0)}</td>
+        <td class="right">${r.o.toFixed(0)}</td>
+        <td class="right">${r.q.toFixed(0)}</td>
+        <td class="right">${r.p.toFixed(0)}</td>
+        <td class="right"><b>${Number(r.r).toFixed(2)}</b></td>
+      </tr>
+    `).join('');
+    rankPreview.classList.remove('hidden');
   }
 
   function initBackGuard(){
@@ -345,40 +420,117 @@
     if (fresh) saveLocal({});
 
     const saved=getSaved();
+    touched = {};
     wrap.innerHTML = bands.map(b=>bandCard(b,saved)).join('');
 
-    wrap.querySelectorAll('.band').forEach(card=>{
-      const name=card.getAttribute('data-band');
-      const set=saved[name]||(saved[name]={m:0,o:0,q:0,p:0,c:''});
-      card.querySelectorAll('input[type=range]').forEach(sl=>{
-        sl.addEventListener('input',()=>{
-          const k=sl.getAttribute('data-k');
-          set[k]=Number(sl.value);
-          card.querySelector(`[data-kv="${k}"]`).textContent=set[k];
-          card.querySelector('[data-ready]').textContent=weighted(set.m,set.o,set.q,set.p);
-          saveLocal(saved);
-        });
+    // wire up sliders and comments
+    wrap.querySelectorAll('input[type=range]').forEach(sl=>{
+      sl.addEventListener('input',()=>{
+        const k=sl.getAttribute('data-k');
+        const band=sl.getAttribute('data-band');
+        const data=getSaved(); const set=data[band]||(data[band]={m:0,o:0,q:0,p:0,c:''});
+        set[k]=Number(sl.value);
+        // badge
+        const badge = wrap.querySelector(`.badge[data-kv="${k}"][data-band="${CSS.escape(band)}"]`);
+        if (badge) badge.textContent=set[k];
+        // readiness
+        const readyEl = wrap.querySelector(`[data-ready][data-band="${CSS.escape(band)}"]`);
+        if (readyEl) readyEl.textContent=weighted(set.m,set.o,set.q,set.p);
+        saveLocal(data);
+        // touched
+        (touched[band]||(touched[band]={}))[k]=true;
+        if (allBandsTouchedAll(bands)) renderRankPreview(bands);
       });
-      const ta=card.querySelector('textarea');
-      ta.addEventListener('input',()=>{ set.c=ta.value; saveLocal(saved); });
+    });
+    wrap.querySelectorAll('textarea[data-k="c"]').forEach(ta=>{
+      ta.addEventListener('input',()=>{
+        const band=ta.getAttribute('data-band');
+        const data=getSaved(); const set=data[band]||(data[band]={m:0,o:0,q:0,p:0,c:''});
+        set.c=ta.value; saveLocal(data);
+      });
     });
 
+    // reset sliders to zero in place
     document.getElementById('btnResetSliders').onclick = ()=>{
       const blank={};
-      wrap.querySelectorAll('.band').forEach(card=>{
-        const name=card.getAttribute('data-band');
-        blank[name]={m:0,o:0,q:0,p:0,c:''};
-        card.querySelectorAll('input[type=range]').forEach(sl=>{
-          sl.value=0;
-          const k=sl.getAttribute('data-k');
-          card.querySelector(`[data-kv="${k}"]`).textContent='0';
-        });
-        const ready=card.querySelector('[data-ready]'); if (ready) ready.textContent='0.00';
-        const ta=card.querySelector('textarea'); if (ta) ta.value='';
+      bands.forEach(b=>{
+        blank[b.name]={m:0,o:0,q:0,p:0,c:''};
       });
       saveLocal(blank);
+      touched={};
+      // UI
+      wrap.querySelectorAll('input[type=range]').forEach(sl=>{
+        sl.value=0;
+        const k=sl.getAttribute('data-k');
+        const band=sl.getAttribute('data-band');
+        const badge = wrap.querySelector(`.badge[data-kv="${k}"][data-band="${CSS.escape(band)}"]`);
+        if (badge) badge.textContent='0';
+      });
+      wrap.querySelectorAll('[data-ready]').forEach(el=>el.textContent='0.00');
+      wrap.querySelectorAll('textarea[data-k="c"]').forEach(ta=>{ ta.value=''; });
+      rankPreview.classList.add('hidden');
+      rankBody.innerHTML='';
     };
 
+    // download scoring card (printable -> Save as PDF)
+    document.getElementById('btnDownload').onclick = ()=>{
+      const judge = (nameTop.value.trim() || nameField.value.trim() || 'Anonymous');
+      const data = getSaved();
+      // build rows
+      const rows = bands.map(b=>{
+        const s=data[b.name]||{m:0,o:0,q:0,p:0,c:''};
+        const r=weighted(+s.m||0,+s.o||0,+s.q||0,+s.p||0);
+        return {band:b.name, ...s, r};
+      }).sort((a,b)=>b.r-a.r);
+
+      const html = `
+<!doctype html><html><head><meta charset="utf-8">
+<title>${judge} — WMB Scoring Card</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;padding:24px}
+  h1{margin:0 0 8px}
+  .meta{color:#555;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 10px;border-bottom:1px solid #ddd;font-size:14px}
+  th{background:#f5f5f5;text-transform:uppercase;letter-spacing:.3px;font-size:12px}
+  .right{text-align:right}
+  @media print{ .noprint{display:none} }
+</style></head><body>
+  <h1>Wacken Metal Battle Cyprus — Scoring Card</h1>
+  <div class="meta">Judge: <b>${judge}</b> • Generated: ${new Date().toLocaleString()}</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Band</th><th class="right">M</th><th class="right">O</th><th class="right">Q</th><th class="right">P</th><th class="right">Readiness</th><th>Comments</th></tr>
+    </thead>
+    <tbody>
+      ${rows.map((r,i)=>`
+        <tr>
+          <td class="right">${i+1}</td>
+          <td>${r.band.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</td>
+          <td class="right">${(+r.m||0).toFixed(0)}</td>
+          <td class="right">${(+r.o||0).toFixed(0)}</td>
+          <td class="right">${(+r.q||0).toFixed(0)}</td>
+          <td class="right">${(+r.p||0).toFixed(0)}</td>
+          <td class="right">${Number(r.r).toFixed(2)}</td>
+          <td>${(r.c||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+  <div class="noprint" style="margin-top:14px">
+    <button onclick="window.print()">Print / Save as PDF</button>
+  </div>
+</body></html>`;
+      const blob = new Blob([html], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (w) {
+        w.focus();
+        // optional auto-print
+        w.addEventListener('load', ()=>{ try{ w.print(); }catch{} });
+      }
+    };
+
+    // submit
     document.getElementById('btnSave').onclick=async()=>{
       const judge = (nameTop.value.trim() || nameField.value.trim());
       if(!judge){ alert('Please enter your name.'); return; }
@@ -392,15 +544,15 @@
         body: JSON.stringify(payload)
       });
       if(r.ok){
-        const toast = document.createElement('div');
-        toast.textContent = 'Thank you — scores submitted';
-        toast.style.cssText = 'position:fixed;right:20px;bottom:20px;background:#2a6b3a;color:#fff;padding:12px 14px;border-radius:10px;border:1px solid #1f4e2b;z-index:9999';
-        document.body.appendChild(toast);
-        setTimeout(()=>{ window.location.href = '/'; }, 1200);
+        successModal.style.display='flex';
+        setTimeout(()=>{ window.location.href = '/'; }, 1400);
       } else {
         alert('Could not save. Check password or connection.');
       }
     };
+
+    // show preview if already complete (edge case: refresh)
+    if (allBandsTouchedAll(bands)) renderRankPreview(bands);
   }
 </script>
 </body>
