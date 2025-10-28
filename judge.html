@@ -221,16 +221,20 @@
   }
 
   function openPanelFresh(){
-    // fresh every time
-    sessionStorage.setItem(S_SCORES, JSON.stringify({}));
-    gate.classList.add('hidden');
-    panel.classList.remove('hidden');
-    rules.classList.remove('hidden');
-    nameTop.value = nameField.value || '';
-    nameTop.addEventListener('input',()=>sessionStorage.setItem(S_NAME,nameTop.value));
-    initScoring(true);
-    initBackGuard();
-  }
+  sessionStorage.setItem(S_SCORES, JSON.stringify({}));
+
+  // Remove the gate so it cannot reappear
+  if (gate && gate.parentNode) gate.parentNode.removeChild(gate);
+
+  panel.classList.remove('hidden');
+  rules.classList.remove('hidden');
+
+  nameTop.value = nameField.value || '';
+  nameTop.addEventListener('input',()=>sessionStorage.setItem(S_NAME,nameTop.value));
+
+  initScoring(true);
+  initBackGuard();
+}
 
   document.getElementById('btnLogin').addEventListener('click', async ()=>{
     msg.textContent='Checking...';
