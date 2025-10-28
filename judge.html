@@ -8,9 +8,8 @@
   :root{
     --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb;
     --line:#2b2023; --ring:rgba(255,90,31,.35);
-    /* Maroon palette in use on main site */
-    --maroon-1:#a01624; --maroon-2:#8f1220; --maroon-border:#6b0c12;
-    --link-orange:#ff5a1f;
+    /* Maroon used on main site */
+    --maroon-1:#c01722; --maroon-2:#8b0f17; --maroon-border:#6b0c12;
   }
   *{box-sizing:border-box}
   body{
@@ -31,25 +30,24 @@
   }
 
   /* Password gate card: maroon gradient */
-  #gate.card{
-    background:linear-gradient(180deg,var(--maroon-1),var(--maroon-2) 85%);
-    border-color:var(--maroon-border);
-  }
-  /* Inputs on the maroon gate: slightly lighter border for contrast */
-  #gate input[type=text], #gate input[type=password]{ border-color:#7e1a21 }
+#gate.card {
+  background: linear-gradient(180deg, #a01624, #8f1220 85%);
+  border-color: #6b0c12; /* subtle darker border */
+}
 
   .h1{font-size:clamp(20px,2.6vw,30px);font-weight:800;margin:0 0 8px}
   .muted{color:var(--muted)}
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
-    background:#1a1416;border:1px solid var(--line);color:#ccc;font-size:12px
-  }
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+        background:#1a1416;border:1px solid var(--line);color:#ccc;font-size:12px}
   a{color:#ffd7c3;text-decoration:none}
 
   input[type=text],input[type=password]{
     background:#0f0d0e;border:1px solid var(--line);
     color:var(--text);padding:10px 12px;border-radius:10px;min-width:220px
   }
+  /* Inputs on the maroon gate: slightly lighter border for contrast */
+  #gate input[type=text], #gate input[type=password]{ border-color:#7e1a21 }
+
   button{background:#2a6b3a;border:none;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer}
   button.secondary{background:#1a1416;border:1px solid var(--line);color:#fff}
   button.warn{background:#7a2626}
@@ -60,75 +58,28 @@
 
   .hidden{display:none}
 
-  /* Criteria explainer boxes now use maroon background like main-page headings */
-  .explainer{display:grid;gap:10px;margin:16px 0}
-  .ex-row{
-    display:grid;gap:6px;
-    border:1px solid var(--maroon-border);
-    border-radius:12px;
-    padding:12px;
-    background:linear-gradient(180deg, rgba(160,22,36,0.20), rgba(143,18,32,0.10));
-  }
+  .explainer{display:grid;gap:10px;margin:12px 0}
+  .ex-row{display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#130f10}
   .ex-row b{font-weight:700}
 
-  /* Instruction line shown only after login, under the main title */
-  #weighingNote{
-    margin:6px 0 14px;
-    font-style:italic;
-    font-weight:700;
-  }
+  .band{border:1px solid var(--line);border-radius:14px;padding:14px;background:#120f10;margin-bottom:14px}
+  .band h3{margin:0 0 4px;font-size:18px}
+  .band .meta{color:var(--muted);font-size:13px;margin-bottom:8px}
 
-  /* Band scoring card: keep layout, but add a band-head with maroon gradient like main page */
-  .band{
-    border:1px solid var(--line);
-    border-radius:14px;
-    background:#120f10;
-    margin-bottom:14px;
-    overflow:hidden;
-  }
-  .band .band-head{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:12px 14px;
-    background:linear-gradient(180deg, rgba(179,18,31,.18), transparent);
-    /* If you prefer the stronger maroon header, swap the line above with:
-       background:linear-gradient(180deg,var(--maroon-1),var(--maroon-2) 85%);
-    */
-    border-bottom:1px solid var(--line);
-  }
-  .band .band-name{font-size:18px;font-weight:800}
-  .band .meta{color:var(--muted);font-size:13px}
-  .band .links{display:flex;gap:12px;flex-wrap:wrap}
-  .band .links a{font-size:13px;color:var(--link-orange)}
-
-  .band .inner{padding:14px}
   .row{display:grid;gap:8px;margin:10px 0}
   .row label{font-size:14px;font-weight:600}
   .control{display:flex;gap:10px;align-items:center}
   .control input[type=range]{width:100%}
   .badge{background:#1a1416;border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:48px;text-align:center}
 
-  iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
-
-  .readiness{
-    display:flex;justify-content:space-between;align-items:center;margin-top:8px;
-    border-top:1px solid var(--line);padding-top:10px
-  }
+  .readiness{display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+             border-top:1px solid var(--line);padding-top:10px}
   .readiness b{font-size:16px}
 
   textarea{width:100%;min-height:70px;resize:vertical;background:#0f0d0e;border:1px solid var(--line);
            color:#fff;border-radius:10px;padding:10px}
 
   .bottom-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:14px}
-
-  /* Ranking table */
-  #ranking.card{margin-top:14px}
-  #rankTable{width:100%;border-collapse:collapse}
-  #rankTable th,#rankTable td{padding:10px 12px;border-bottom:1px solid var(--line)}
-  #rankTable thead th{
-    font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;
-    background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))
-  }
-  #rankTable td.right{text-align:right}
 
   /* Overlay for back-warning */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999}
@@ -139,10 +90,6 @@
 <body>
   <div class="container">
     <h1 class="h1">Judging Panel — Wacken Metal Battle Cyprus</h1>
-    <!-- Shown only after login -->
-    <p id="weighingNote" class="hidden">
-      Score each band from 0 to 10. Wacken Readiness is a weighted score: 40% Musicianship, 25% Originality, 20% Online Material Quality, 15% Online Presence.
-    </p>
 
     <!-- Password gate (maroon) -->
     <section id="gate" class="card login">
@@ -168,27 +115,14 @@
           <div class="ex-row"><b>Online Presence 15%</b>
             <div>Engagement and following across platforms, posting consistency, communication with fans.</div></div>
         </div>
+        <p class="muted"><i><b>Score each band from 0 to 10. Wacken Readiness is a weighted score: 40% Musicianship, 25% Originality, 20% Online Material Quality, 15% Online Presence.</b></i></p>
       </div>
 
       <div id="bandsWrap" class="card" style="margin-top:14px"></div>
 
-      <!-- Live ranking table -->
-      <section id="ranking" class="card hidden">
-        <div style="font-weight:800;margin-bottom:8px">Your current ranking</div>
-        <div style="overflow:auto">
-          <table id="rankTable" aria-label="Ranking by Wacken Readiness">
-            <thead>
-              <tr><th>Band</th><th class="right">Wacken Readiness</th></tr>
-            </thead>
-            <tbody id="rankBody"></tbody>
-          </table>
-        </div>
-      </section>
-
       <div class="card bottom-actions">
         <input id="judgeNameTop" type="text" placeholder="Judge name" />
         <button id="btnResetSliders" class="warn">Refresh your scores & start again</button>
-        <button id="btnDownload" class="secondary">Download your completed scoring card</button>
         <button id="btnSave">Submit your Scores</button>
       </div>
     </section>
@@ -218,13 +152,9 @@
   const nameTop=document.getElementById('judgeNameTop');
   const pwdField=document.getElementById('judgePwd');
   const msg=document.getElementById('gateMsg');
-  const note=document.getElementById('weighingNote');
 
   const backOverlay=document.getElementById('backOverlay');
   const stayBtn=document.getElementById('stayBtn');
-
-  const rankCard=document.getElementById('ranking');
-  const rankBody=document.getElementById('rankBody');
 
   function saveLocal(d){ sessionStorage.setItem(S_SCORES,JSON.stringify(d)); }
   function getSaved(){ try{return JSON.parse(sessionStorage.getItem(S_SCORES)||'{}')}catch{return{}} }
@@ -259,7 +189,6 @@
     sessionStorage.setItem(S_SCORES, JSON.stringify({}));
     gate.classList.add('hidden');
     panel.classList.remove('hidden');
-    note.classList.remove('hidden');            // show instruction line
     nameTop.value = nameField.value || '';
     nameTop.addEventListener('input',()=>sessionStorage.setItem(S_NAME,nameTop.value));
     initScoring(true);
@@ -280,7 +209,7 @@
   });
 
   const WEIGHTS={m:0.40,o:0.25,q:0.20,p:0.15};
-  function weighted(m,o,q,p){ return (m*WEIGHTS.m + o*WEIGHTS.o + q*WEIGHTS.q + p*WEIGHTS.p); }
+  function weighted(m,o,q,p){ return (m*WEIGHTS.m + o*WEIGHTS.o + q*WEIGHTS.q + p*WEIGHTS.p).toFixed(2); }
 
   function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function ytId(url){
@@ -309,21 +238,9 @@
     return null;
   }
 
-  function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
-
   function bandCard(band, saved){
     const s=saved[band.name]||{m:0,o:0,q:0,p:0,c:''};
     const ready=weighted(s.m,s.o,s.q,s.p);
-
-    // Build social links like on main page
-    const websiteUrl = Array.isArray(band.otherLinks) && band.otherLinks.length ? band.otherLinks[0] : "";
-    const socials = [
-      link('Spotify', band.spotify),
-      link('Facebook', band.facebookUrl),
-      link('YouTube', band.youtube),
-      link('Instagram', band.instagramUrl),
-      websiteUrl ? link('Website', websiteUrl) : ''
-    ].filter(Boolean).join(' ');
 
     // Prefer YouTube else Spotify (forced track or artist)
     let media = '';
@@ -338,58 +255,51 @@
 
     return `
       <article class="band" data-band="${esc(band.name)}">
-        <div class="band-head">
-          <div>
-            <div class="band-name">${esc(band.name)}</div>
-            <div class="meta">${esc(band.city||'')}${band.city&&band.genre?' · ':''}${esc(band.genre||'')}</div>
+        <h3>${esc(band.name)}</h3>
+        <div class="meta">${esc(band.city||'')}${band.city&&band.genre?' · ':''}${esc(band.genre||'')}</div>
+
+        ${media ? `<div class="row"><div class="pill">Featured media</div>${media}</div>` : ''}
+
+        <div class="row">
+          <label>Musicianship</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.m}" data-k="m">
+            <span class="badge" data-kv="m">${s.m}</span>
           </div>
-          <div class="links">${socials}</div>
         </div>
 
-        <div class="inner">
-          ${media ? `<div class="row"><div class="pill">Featured media</div>${media}</div>` : ''}
-
-          <div class="row">
-            <label>Musicianship</label>
-            <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.m}" data-k="m">
-              <span class="badge" data-kv="m">${s.m}</span>
-            </div>
+        <div class="row">
+          <label>Originality</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.o}" data-k="o">
+            <span class="badge" data-kv="o">${s.o}</span>
           </div>
+        </div>
 
-          <div class="row">
-            <label>Originality</label>
-            <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.o}" data-k="o">
-              <span class="badge" data-kv="o">${s.o}</span>
-            </div>
+        <div class="row">
+          <label>Online Material Quality</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.q}" data-k="q">
+            <span class="badge" data-kv="q">${s.q}</span>
           </div>
+        </div>
 
-          <div class="row">
-            <label>Online Material Quality</label>
-            <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.q}" data-k="q">
-              <span class="badge" data-kv="q">${s.q}</span>
-            </div>
+        <div class="row">
+          <label>Online Presence</label>
+          <div class="control">
+            <input type="range" min="0" max="10" step="1" value="${s.p}" data-k="p">
+            <span class="badge" data-kv="p">${s.p}</span>
           </div>
+        </div>
 
-          <div class="row">
-            <label>Online Presence</label>
-            <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.p}" data-k="p">
-              <span class="badge" data-kv="p">${s.p}</span>
-            </div>
-          </div>
+        <div class="readiness">
+          <span class="muted">Wacken Readiness</span>
+          <b data-ready>${ready}</b>
+        </div>
 
-          <div class="readiness">
-            <span class="muted">Wacken Readiness</span>
-            <b data-ready>${ready.toFixed(2)}</b>
-          </div>
-
-          <div class="row">
-            <label>Comments</label>
-            <textarea data-k="c" placeholder="Optional comments">${esc(s.c||'')}</textarea>
-          </div>
+        <div class="row">
+          <label>Comments</label>
+          <textarea data-k="c" placeholder="Optional comments">${esc(s.c||'')}</textarea>
         </div>
       </article>
     `;
@@ -422,78 +332,6 @@
     });
   }
 
-  function recomputeRanking(bands){
-    const saved = getSaved();
-    const rows = bands.map(b=>{
-      const s = saved[b.name] || {m:0,o:0,q:0,p:0};
-      return { band:b.name, r: weighted(s.m,s.o,s.q,s.p) };
-    }).filter(x=>!Number.isNaN(x.r));
-
-    // Only show if any score exists
-    const any = rows.some(x=>x.r>0);
-    if (!any){
-      rankCard.classList.add('hidden');
-      rankBody.innerHTML='';
-      return;
-    }
-
-    rows.sort((a,b)=>b.r-a.r);
-    rankBody.innerHTML = rows.map(r=>`
-      <tr><td>${esc(r.band)}</td><td class="right"><b>${r.r.toFixed(2)}</b></td></tr>
-    `).join('');
-    rankCard.classList.remove('hidden');
-  }
-
-  function makePrintableHtml({bands, judge, saved}){
-    const rows = bands.map(b=>{
-      const s = saved[b.name] || {m:0,o:0,q:0,p:0,c:''};
-      const r = weighted(s.m,s.o,s.q,s.p);
-      return {name:b.name, m:s.m, o:s.o, q:s.q, p:s.p, r:r, c:(s.c||'')};
-    }).sort((a,b)=>b.r-a.r);
-
-    const today = new Date().toLocaleString();
-    return `
-<!doctype html><html><head>
-<meta charset="utf-8"><title>Scoring — ${esc(judge)}</title>
-<style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:#111}
-  h1{font-size:20px;margin:0 0 4px}
-  .meta{color:#444;margin:0 0 12px}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 10px;border:1px solid #ccc;font-size:13px;vertical-align:top}
-  thead th{background:#f2f2f2;text-transform:uppercase;letter-spacing:.3px}
-  .right{text-align:right}
-  .small{font-size:12px;color:#444}
-</style>
-</head><body>
-  <h1>Wacken Metal Battle Cyprus — Judge Scores</h1>
-  <p class="meta">Judge: <b>${esc(judge||'')}</b> · Exported: ${esc(today)}</p>
-  <table>
-    <thead>
-      <tr>
-        <th>Band</th><th class="right">Musicianship</th><th class="right">Originality</th>
-        <th class="right">Material</th><th class="right">Presence</th><th class="right">Readiness</th><th>Comments</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rows.map(r=>`
-        <tr>
-          <td>${esc(r.name)}</td>
-          <td class="right">${r.m}</td>
-          <td class="right">${r.o}</td>
-          <td class="right">${r.q}</td>
-          <td class="right">${r.p}</td>
-          <td class="right"><b>${r.r.toFixed(2)}</b></td>
-          <td>${esc(r.c)}</td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
-  <p class="small">Weights: 40% Musicianship · 25% Originality · 20% Online Material Quality · 15% Online Presence.</p>
-  <script>window.addEventListener('load',()=>{window.print();});</script>
-</body></html>`;
-  }
-
   async function initScoring(fresh=false){
     const wrap=document.getElementById('bandsWrap');
     const bands=(await loadBands()).slice().sort((a,b)=>a.name.localeCompare(b.name));
@@ -511,19 +349,14 @@
           const k=sl.getAttribute('data-k');
           set[k]=Number(sl.value);
           card.querySelector(`[data-kv="${k}"]`).textContent=set[k];
-          card.querySelector('[data-ready]').textContent=weighted(set.m,set.o,set.q,set.p).toFixed(2);
+          card.querySelector('[data-ready]').textContent=weighted(set.m,set.o,set.q,set.p);
           saveLocal(saved);
-          recomputeRanking(bands);
         });
       });
       const ta=card.querySelector('textarea');
       ta.addEventListener('input',()=>{ set.c=ta.value; saveLocal(saved); });
     });
 
-    // initial ranking (hidden if no scores)
-    recomputeRanking(bands);
-
-    // Reset sliders to zero in place
     document.getElementById('btnResetSliders').onclick = ()=>{
       const blank={};
       wrap.querySelectorAll('.band').forEach(card=>{
@@ -538,26 +371,8 @@
         const ta=card.querySelector('textarea'); if (ta) ta.value='';
       });
       saveLocal(blank);
-      recomputeRanking(bands);
     };
 
-    // Download PDF
-    document.getElementById('btnDownload').onclick = ()=>{
-      const judge = (nameTop.value.trim() || nameField.value.trim());
-      const html = makePrintableHtml({bands, judge, saved:getSaved()});
-      const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank');
-      // Fallback if popup blocked
-      if (!w) {
-        const a = document.createElement('a');
-        a.href = url; a.download = 'wmb-scoring.html';
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      // URL will be released by the new window on close
-    };
-
-    // Submit
     document.getElementById('btnSave').onclick=async()=>{
       const judge = (nameTop.value.trim() || nameField.value.trim());
       if(!judge){ alert('Please enter your name.'); return; }
@@ -581,8 +396,6 @@
       }
     };
   }
-
-  function hasAnyScores(d){ return Object.values(d||{}).some(v => (v.m|0)!==0 || (v.o|0)!==0 || (v.q|0)!==0 || (v.p|0)!==0 || (v.c||'').trim()!==''); }
 </script>
 </body>
 </html>
