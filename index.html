@@ -47,10 +47,8 @@
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
     footer{border-top:1px solid #2b2023;color:var(--muted)}
     .muted{color:var(--muted)}
-    /* CTA button under leaderboards */
-    .cta-wrap{display:flex;justify-content:center;margin-top:18px}
-    .cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 18px;border-radius:12px;border:1px solid #b3121f;background:#b3121f;color:#fff;font-weight:700;min-width:260px}
-    .cta-btn:hover{filter:brightness(1.05)}
+    .cta{display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700}
+    .cta:hover{background:#20181a}
   </style>
 </head>
 <body>
@@ -81,10 +79,9 @@
     <!-- Band profiles -->
     <section class="section" id="bands"></section>
 
-    <!-- Leaderboards at the end -->
+    <!-- Leaderboards moved to the end -->
     <section class="section card" id="leaderboards">
       <div class="h2">Leaderboards</div>
-      <p class="lead">Top six bands for each metric.</p>
       <div class="boards">
         <div class="board"><h3>Artist Popularity Score on Spotify (0-100)</h3><ol class="rank-list" id="board-spotify"></ol></div>
         <div class="board"><h3>Facebook followers</h3><ol class="rank-list" id="board-facebook"></ol></div>
@@ -92,10 +89,7 @@
         <div class="board"><h3>Instagram followers</h3><ol class="rank-list" id="board-instagram"></ol></div>
       </div>
 
-      <!-- New big CTA for judges -->
-      <div class="cta-wrap">
-        <a class="cta-btn" href="/judge.html">Judges Scoring Page</a>
-      </div>
+      <a class="cta" href="/judge.html">Judges Scoring Page</a>
     </section>
   </main>
 
@@ -139,6 +133,17 @@
       return null;
     }
 
+    function spotifyTrackEmbedFromUrl(raw){
+      try{
+        const u = new URL(raw.replace("?si","/ignore?si"));
+        const parts = u.pathname.split("/").filter(Boolean);
+        if (parts[0] === "track" && parts[1]) {
+          return `https://open.spotify.com/embed/track/${parts[1]}`;
+        }
+      }catch{}
+      return null;
+    }
+
     function renderSummary(){
       document.getElementById('totalCount').textContent = BANDS.length;
       const tb = document.getElementById('alphabetical');
@@ -169,11 +174,12 @@
     function bandCardHTML(b){
       const featuredId = ytId(b.youtube);
       const liveId = ytId(b.liveYoutube);
-
       const sameVideo = featuredId && liveId && featuredId === liveId;
+
       const featured = featuredId
         ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>`
         : `<div class="stat">No featured video</div>`;
+
       const live = liveId && !sameVideo
         ? `<div class="subhead">Live video</div><iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>`
         : ``;
@@ -248,11 +254,14 @@
       const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
 
       const prev = STATS[b.name] || {};
+      let forcedEmbed = null;
+      if (b.spotifyEmbedTrack) forcedEmbed = spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack);
+
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
         spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
-        spotifyEmbed: sp?.embedUrl ?? prev.spotifyEmbed ?? null,
+        spotifyEmbed: forcedEmbed || sp?.embedUrl || prev.spotifyEmbed || null,
         trackName: sp?.trackName ?? prev.trackName ?? null
       };
       patchBandCard(b.name);
@@ -263,7 +272,6 @@
       renderBoards();
     }
 
-    // initial render
     document.getElementById('year').textContent = new Date().getFullYear();
     renderSummary();
     renderBands();
