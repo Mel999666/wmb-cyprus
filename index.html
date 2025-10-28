@@ -6,65 +6,125 @@
   <title>Wacken Metal Battle Cyprus — Applications</title>
   <meta name="description" content="Public showcase of bands that applied for Wacken Metal Battle Cyprus." />
   <style>
-    :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35)}
+    :root{
+      --bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;
+      --red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35);
+      --green:#2a6b3a;
+      /* Maroon gradient (lighter -> base -> deep) */
+      --maroon-1:#e05563;
+      --maroon-2:#c21a25;
+      --maroon-3:#8f1220;
+      --maroon-text:#d86a74; /* readable maroon for headings */
+    }
     *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
-      linear-gradient(180deg,#0d0b0d,#080708 65%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+    body{
+      margin:0;
+      background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
+                 linear-gradient(180deg,#0d0b0d,#080708 65%);
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif
+    }
     a{color:var(--text);text-decoration:none}
     a:focus{outline:2px solid var(--ring);outline-offset:3px;border-radius:8px}
     img{max-width:100%;display:block}
-    header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.65));border-bottom:1px solid #231a1d;backdrop-filter:blur(8px)}
+    header{
+      position:sticky;top:0;z-index:50;
+      background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.65));
+      border-bottom:1px solid #231a1d;backdrop-filter:blur(8px)
+    }
     .container{max-width:1140px;margin:0 auto;padding:20px}
     .nav{display:flex;align-items:center;gap:16px}
     .site-title{font-size:clamp(22px,4vw,36px);font-weight:800;letter-spacing:.3px}
     .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
     .section{padding:28px 0}
-    .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:16px;padding:20px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
-    .h2{font-size:22px;margin:0 0 10px}
+    .card{
+      background:linear-gradient(180deg,#181316,#110f10);
+      border:1px solid #2b2023;border-radius:16px;padding:20px;
+      box-shadow:0 18px 40px rgba(0,0,0,.45)
+    }
+    .h2{font-size:22px;margin:0 0 10px;font-weight:800}
     .lead{color:var(--muted)}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
-    thead th{font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.25),rgba(139,15,23,.08))}
+    thead th{
+      font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:#ffefe9;
+      background:linear-gradient(180deg,rgba(179,18,31,.25),rgba(139,15,23,.08))
+    }
     tbody tr:hover{background:rgba(179,18,31,.08)}
     .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
     @media (max-width:800px){.boards{grid-template-columns:1fr}}
-    .board h3{margin:0 0 8px}
+
+    /* Leaderboard sub-headings in maroon and bold */
+    .board h3{
+      margin:0 0 8px;
+      color:var(--maroon-text);
+      font-weight:700;
+    }
+
     .rank-list{list-style:none;margin:0;padding:0}
-    .rank-list li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #2b2023;border-radius:12px;margin-bottom:8px;background:#120e0f}
+    .rank-list li{
+      display:flex;justify-content:space-between;gap:12px;padding:10px 12px;
+      border:1px solid #2b2023;border-radius:12px;margin-bottom:8px;background:#120e0f
+    }
     .rank-list li span:first-child{font-weight:700}
     .rank-list li .meta{color:var(--muted)}
+
     .band-card{border:1px solid #2b2023;border-radius:16px;overflow:hidden;background:#120f10;margin-bottom:18px}
-    .band-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)}
+    .band-head{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:14px 16px;background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)
+    }
     .band-name{font-weight:800;font-size:18px}
     .links{display:flex;gap:12px;flex-wrap:wrap}
-    .links a{font-size:13px;color:var(--lava)}
+    .links a{font-size:13px;color:#ff5a1f} /* keep social links orange */
     .band-body{padding:14px 16px;display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
     .subhead{margin:10px 0 6px;font-weight:700;color:#ffefe9}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:12px}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+      background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:12px
+    }
     .stats{display:grid;gap:8px}
-    .stat{display:flex;justify-content:space-between;border:1px solid #2b2023;border-radius:12px;padding:10px 12px;background:#100d0e}
+    .stat{
+      display:flex;justify-content:space-between;border:1px solid #2b2023;border-radius:12px;
+      padding:10px 12px;background:#100d0e
+    }
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
+
+    /* Top-right nav buttons: maroon gradient, white text */
+    .nav-btn{
+      display:inline-flex;align-items:center;gap:8px;
+      background:linear-gradient(135deg,var(--maroon-1),var(--maroon-2) 55%,var(--maroon-3));
+      color:#fff; border:1px solid #2b2023;
+      padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
+    }
+    .nav-btn:hover{filter:brightness(1.04)}
+
+    /* CTA stays green */
+    .cta{
+      display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;
+      border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700
+    }
+    .cta.green{background:var(--green);border-color:var(--green);color:#fff}
+    .cta.green:hover{filter:brightness(1.05)}
+
     footer{border-top:1px solid #2b2023;color:var(--muted)}
     .muted{color:var(--muted)}
-    .cta{display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700}
-    .cta:hover{background:#20181a}
   </style>
 </head>
 <body>
   <header>
     <div class="container nav">
-      <img class="logo" src="./public/wmb-logo.png" alt="Metal Battle logo">
+      <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
       <div class="site-title">Wacken Metal Battle Cyprus</div>
-      <nav style="margin-left:auto;display:flex;gap:14px">
-        <a href="/judge.html" class="pill">Judges</a>
-        <a href="/results.html" class="pill">Admin only</a>
+      <nav style="margin-left:auto;display:flex;gap:12px">
+        <a href="/judge.html" class="nav-btn">Judges</a>
+        <a href="/results.html" class="nav-btn">Admin only</a>
       </nav>
     </div>
   </header>
 
   <main class="container">
-    <!-- Applications summary -->
     <section class="section card" id="summary">
       <div class="h2">Applications</div>
       <p class="lead"><span class="pill">Total</span> <b id="totalCount">0</b></p>
@@ -76,10 +136,8 @@
       </div>
     </section>
 
-    <!-- Band profiles -->
     <section class="section" id="bands"></section>
 
-    <!-- Leaderboards moved to the end -->
     <section class="section card" id="leaderboards">
       <div class="h2">Leaderboards</div>
       <div class="boards">
@@ -88,21 +146,20 @@
         <div class="board"><h3>YouTube video views</h3><ol class="rank-list" id="board-youtube"></ol></div>
         <div class="board"><h3>Instagram followers</h3><ol class="rank-list" id="board-instagram"></ol></div>
       </div>
-
-      <a class="cta" href="/judge.html">Judges Scoring Page</a>
+      <a class="cta green" href="/judge.html">Go to Judges Scoring Page</a>
     </section>
   </main>
 
   <footer>
     <div class="container" style="padding:20px 0;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap">
       <span>© <span id="year"></span> Wacken Metal Battle Cyprus</span>
-      <span class="meta">Palette inspired by event artwork</span>
+      <a class="muted" href="https://www.instagram.com/rockisland_events/" target="_blank" rel="noopener">
+        Created by Rock Island Events
+      </a>
     </div>
   </footer>
 
-  <!-- Load band data -->
   <script src="/bands.js?v=artistpop1"></script>
-
   <script>
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
@@ -117,9 +174,7 @@
         if (typeof b.bio === "string" && b.bio.trim()) STATS[b.name].bio = b.bio.trim();
       }
     }
-
     function byName(a,b){ return a.name.localeCompare(b.name); }
-
     function ytId(url){
       if(!url) return null;
       try{
@@ -132,7 +187,6 @@
       }catch(e){}
       return null;
     }
-
     function spotifyTrackEmbedFromUrl(raw){
       try{
         const u = new URL(raw.replace("?si","/ignore?si"));
@@ -143,15 +197,12 @@
       }catch{}
       return null;
     }
-
     function renderSummary(){
       document.getElementById('totalCount').textContent = BANDS.length;
       const tb = document.getElementById('alphabetical');
       tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
     }
-
     function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
-
     function renderBoards(){
       const metrics = [
         { key:'spotifyPopularity', target:'board-spotify', label:'score' },
@@ -168,22 +219,17 @@
           list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
       });
     }
-
     function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
-
     function bandCardHTML(b){
       const featuredId = ytId(b.youtube);
       const liveId = ytId(b.liveYoutube);
       const sameVideo = featuredId && liveId && featuredId === liveId;
-
       const featured = featuredId
         ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>`
         : `<div class="stat">No featured video</div>`;
-
       const live = liveId && !sameVideo
         ? `<div class="subhead">Live video</div><iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>`
         : ``;
-
       const websiteUrl = Array.isArray(b.otherLinks) && b.otherLinks.length ? b.otherLinks[0] : "";
       const socials = [
         link('Spotify', b.spotify),
@@ -192,7 +238,6 @@
         link('Instagram', b.instagramUrl),
         websiteUrl ? link('Website', websiteUrl) : ''
       ].filter(Boolean).join(' ');
-
       return `
         <article class="band-card" data-band="${b.name}">
           <div class="band-head">
@@ -222,15 +267,12 @@
               </div>
             </div>
           </div>
-        </article>
-      `;
+        </article>`;
     }
-
     function renderBands(){
       const wrap = document.getElementById('bands');
       wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
     }
-
     function patchBandCard(name){
       const data = STATS[name] || {};
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
@@ -246,17 +288,13 @@
         if (el) el.textContent = (data[key] || 0).toLocaleString();
       });
     }
-
     async function getJSON(u){ try{ const r = await fetch(u); return await r.json(); }catch{ return null; } }
-
     async function loadBandLive(b){
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
       const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
-
       const prev = STATS[b.name] || {};
       let forcedEmbed = null;
       if (b.spotifyEmbedTrack) forcedEmbed = spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack);
-
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
@@ -266,18 +304,12 @@
       };
       patchBandCard(b.name);
     }
-
     async function loadAllLive(){
       await Promise.all(BANDS.map(loadBandLive));
       renderBoards();
     }
-
     document.getElementById('year').textContent = new Date().getFullYear();
-    renderSummary();
-    renderBands();
-    applyManualStats();
-    renderBoards();
-    loadAllLive();
+    renderSummary(); renderBands(); applyManualStats(); renderBoards(); loadAllLive();
   </script>
 </body>
 </html>
