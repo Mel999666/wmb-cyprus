@@ -1,4 +1,3 @@
-// api/get-scores.js
 export const config = { runtime: 'edge' };
 
 function bad(msg, code = 400) {
@@ -20,11 +19,11 @@ export default async function handler(req) {
 
     const matchResults = !!resultsPw && pw === resultsPw;
     const matchAdmin   = !!adminPw   && pw === adminPw;
+
     if (!matchResults && !matchAdmin) {
-      return bad(`Unauthorized: matchResults=${matchResults} matchAdmin=${matchAdmin}`, 401);
+      return bad(`Unauthorized`, 401);
     }
 
-    // KV env
     const url   = (process.env.KV_REST_API_URL   || '').trim();
     const token = (process.env.KV_REST_API_TOKEN || '').trim();
     if (!url || !token) return bad('KV not configured', 500);
@@ -36,7 +35,7 @@ export default async function handler(req) {
     const keysJson = await keysRes.json();
     const keys = Array.isArray(keysJson.result) ? keysJson.result : [];
 
-    // read each key and dedupe by judgeKey (or normalized judge)
+    // read each key
     const out = {};
     for (const k of keys) {
       const g = await fetch(`${url}/get/${encodeURIComponent(k)}`, {
@@ -46,15 +45,10 @@ export default async function handler(req) {
       if (gj?.result) {
         try {
           const val = JSON.parse(gj.result);
-          if (val?.scores) {
-            const jk = (val.judgeKey || String(val.judge||'').trim().toLowerCase());
-            // last write wins for that judgeKey
-            out[jk] = {
-              judge: val.judge || jk,
-              judgeKey: jk,
-              scores: val.scores,
-              ts: val.ts || 0
-            };
+          const jname = (val?.judge || '').trim();
+          const jkey  = (val?.judgekey || '').trim();
+          if (jname && val?.scores) {
+            out[jkey || jname] = val; // prefer normalized key
           }
         } catch {}
       }
