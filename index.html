@@ -1,315 +1,166 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wacken Metal Battle Cyprus — Applications</title>
-  <meta name="description" content="Public showcase of bands that applied for Wacken Metal Battle Cyprus." />
-  <style>
-    :root{
-      --bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;
-      --red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35);
-      --green:#2a6b3a;
-      /* Maroon gradient (lighter -> base -> deep) */
-      --maroon-1:#e05563;
-      --maroon-2:#c21a25;
-      --maroon-3:#8f1220;
-      --maroon-text:#ffffff; /* readable maroon for headings */
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
-                 linear-gradient(180deg,#0d0b0d,#080708 65%);
-      color:var(--text);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif
-    }
-    a{color:var(--text);text-decoration:none}
-    a:focus{outline:2px solid var(--ring);outline-offset:3px;border-radius:8px}
-    img{max-width:100%;display:block}
-    header{
-      position:sticky;top:0;z-index:50;
-      background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.65));
-      border-bottom:1px solid #231a1d;backdrop-filter:blur(8px)
-    }
-    .container{max-width:1140px;margin:0 auto;padding:20px}
-    .nav{display:flex;align-items:center;gap:16px}
-    .site-title{font-size:clamp(22px,4vw,36px);font-weight:800;letter-spacing:.3px}
-    .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
-    .section{padding:28px 0}
-    .card{
-      background:linear-gradient(180deg,#181316,#110f10);
-      border:1px solid #2b2023;border-radius:16px;padding:20px;
-      box-shadow:0 18px 40px rgba(0,0,0,.45)
-    }
-    .h2{font-size:22px;margin:0 0 10px;font-weight:800}
-    .lead{color:var(--muted)}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
-    thead th{
-      font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:#ffefe9;
-      background:linear-gradient(180deg,rgba(179,18,31,.25),rgba(139,15,23,.08))
-    }
-    tbody tr:hover{background:rgba(179,18,31,.08)}
-    .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-    @media (max-width:800px){.boards{grid-template-columns:1fr}}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Wacken Metal Battle Cyprus</title>
+<style>
+  :root{
+    --bg:#0a0a0b; 
+    --panel:#151215; 
+    --text:#f2f2f2; 
+    --muted:#b8b6bb;
+    --line:#2b2023; 
+    --ring:rgba(255,90,31,.35);
+    --maroon-1:#c01722;
+    --maroon-2:#8b0f17;
+    --maroon-border:#6b0c12;
+  }
 
-    /* Leaderboard sub-headings in maroon and bold */
-    .board h3{
-      margin:0 0 8px;
-      color:var(--maroon-text);
-      font-weight:700;
-    }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#0d0b0d,#080708 65%);
+    color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  }
+  a{text-decoration:none;color:#ffd7c3}
+  header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:20px 24px;flex-wrap:wrap;
+  }
+  header h1{
+    display:flex;align-items:center;gap:10px;font-size:22px;font-weight:800;margin:0;
+  }
+  header h1 img{height:36px;width:auto}
+  nav{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 14px;border-radius:999px;
+    background:#1a1416;border:1px solid var(--line);
+    font-size:14px;font-weight:600;color:#fff;
+  }
 
-    .rank-list{list-style:none;margin:0;padding:0}
-    .rank-list li{
-      display:flex;justify-content:space-between;gap:12px;padding:10px 12px;
-      border:1px solid #2b2023;border-radius:12px;margin-bottom:8px;background:#120e0f
-    }
-    .rank-list li span:first-child{font-weight:700}
-    .rank-list li .meta{color:var(--muted)}
+  /* MAROON STYLE FOR TOP NAV BUTTONS */
+  header nav .pill{
+    background:linear-gradient(180deg,var(--maroon-1),var(--maroon-2));
+    border-color:var(--maroon-border);
+    color:#ffefe9;
+  }
+  header nav .pill:hover{filter:brightness(1.08)}
 
-    .band-card{border:1px solid #2b2023;border-radius:16px;overflow:hidden;background:#120f10;margin-bottom:18px}
-    .band-head{
-      display:flex;justify-content:space-between;align-items:center;
-      padding:14px 16px;background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)
-    }
-    .band-name{font-weight:800;font-size:18px}
-    .links{display:flex;gap:12px;flex-wrap:wrap}
-    .links a{font-size:13px;color:#ff5a1f} /* keep social links orange */
-    .band-body{padding:14px 16px;display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-    .subhead{margin:10px 0 6px;font-weight:700;color:#ffefe9}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
-      background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:12px
-    }
-    .stats{display:grid;gap:8px}
-    .stat{
-      display:flex;justify-content:space-between;border:1px solid #2b2023;border-radius:12px;
-      padding:10px 12px;background:#100d0e
-    }
-    .stat b{font-weight:700}
-    iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
+  main{max-width:1100px;margin:0 auto;padding:20px}
+  .leaderboard{
+    margin-top:30px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    background:linear-gradient(180deg,#181316,#110f10);
+    box-shadow:0 18px 40px rgba(0,0,0,.45);
+  }
+  .leaderboard h2{
+    font-size:22px;font-weight:800;margin-bottom:12px;color:#fff;
+  }
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--line)}
+  th{text-align:left;font-weight:700;font-size:14px;color:#ffb3b3}
+  td{font-size:14px;color:var(--text)}
+  .right{text-align:right}
 
-    /* Top-right nav buttons: maroon gradient, white text */
-    .nav-btn{
-      display:inline-flex;align-items:center;gap:8px;
-      background:linear-gradient(135deg,var(--maroon-1),var(--maroon-2) 55%,var(--maroon-3));
-      color:#fff; border:1px solid #2b2023;
-      padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
-    }
-    .nav-btn:hover{filter:brightness(1.04)}
+  .band-grid{display:grid;gap:20px;margin-top:20px}
+  .band-card{
+    border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    background:linear-gradient(180deg,#181316,#110f10);
+    box-shadow:0 8px 20px rgba(0,0,0,.4);
+  }
+  .band-card h3{margin:0;font-size:18px;font-weight:800;padding:12px 16px}
+  .band-card .meta{padding:0 16px 8px;color:var(--muted);font-size:13px}
+  .band-card iframe{width:100%;height:200px;border:none}
+  .band-card .stats{padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px}
+  .band-card .stats span{font-size:13px;color:#f2f2f2}
 
-    /* CTA stays green */
-    .cta{
-      display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;
-      border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700
-    }
-    .cta.green{background:var(--green);border-color:var(--green);color:#fff}
-    .cta.green:hover{filter:brightness(1.05)}
-
-    footer{border-top:1px solid #2b2023;color:var(--muted)}
-    .muted{color:var(--muted)}
-  </style>
+  .footer{
+    text-align:center;padding:24px 10px;font-size:14px;color:var(--muted);
+    border-top:1px solid var(--line);margin-top:40px;
+  }
+  .footer a{color:#ffd7c3}
+  
+  .cta{
+    display:block;width:100%;max-width:320px;margin:30px auto 0 auto;
+    background:#2a6b3a;color:#fff;text-align:center;font-weight:700;
+    padding:14px 20px;border:none;border-radius:12px;font-size:16px;
+    text-decoration:none;
+  }
+  .cta:hover{filter:brightness(1.1)}
+</style>
 </head>
 <body>
   <header>
-    <div class="container nav">
-      <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
-      <div class="site-title">Wacken Metal Battle Cyprus</div>
-      <nav style="margin-left:auto;display:flex;gap:12px">
-        <a href="/judge.html" class="nav-btn">Judges</a>
-        <a href="/results.html" class="nav-btn">Admin only</a>
-      </nav>
-    </div>
+    <h1><img src="/logo.png" alt="Logo">Wacken Metal Battle Cyprus</h1>
+    <nav>
+      <a href="/judge.html" class="pill">Judges</a>
+      <a href="/results.html" class="pill">Admin only</a>
+    </nav>
   </header>
 
-  <main class="container">
-    <section class="section card" id="summary">
-      <div class="h2">Applications</div>
-      <p class="lead"><span class="pill">Total</span> <b id="totalCount">0</b></p>
-      <div style="overflow:auto">
-        <table aria-label="Alphabetical list of bands">
-          <thead><tr><th>Band</th><th>City</th><th>Genre</th></tr></thead>
-          <tbody id="alphabetical"></tbody>
-        </table>
-      </div>
+  <main>
+    <section class="leaderboard">
+      <h2>Leaderboard</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th class="right">Artist Popularity</th>
+            <th class="right">Facebook Followers</th>
+            <th class="right">YouTube Views</th>
+            <th class="right">Instagram Followers</th>
+          </tr>
+        </thead>
+        <tbody id="leaderRows">
+          <tr><td colspan="5" class="muted">Loading live data...</td></tr>
+        </tbody>
+      </table>
     </section>
 
-    <section class="section" id="bands"></section>
+    <div id="bands" class="band-grid"></div>
 
-    <section class="section card" id="leaderboards">
-      <div class="h2">Leaderboards</div>
-      <div class="boards">
-        <div class="board"><h3>Artist Popularity Score on Spotify (0-100)</h3><ol class="rank-list" id="board-spotify"></ol></div>
-        <div class="board"><h3>Facebook followers</h3><ol class="rank-list" id="board-facebook"></ol></div>
-        <div class="board"><h3>YouTube video views</h3><ol class="rank-list" id="board-youtube"></ol></div>
-        <div class="board"><h3>Instagram followers</h3><ol class="rank-list" id="board-instagram"></ol></div>
-      </div>
-      <a class="cta green" href="/judge.html">Go to Judges Scoring Page</a>
-    </section>
+    <a href="/judge.html" class="cta">Go to Judges Scoring Page</a>
   </main>
 
-  <footer>
-    <div class="container" style="padding:20px 0;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap">
-      <span>© <span id="year"></span> Wacken Metal Battle Cyprus</span>
-      <a class="muted" href="https://www.instagram.com/rockisland_events/" target="_blank" rel="noopener">
-        Created by Rock Island Events
-      </a>
-    </div>
+  <footer class="footer">
+    Created by <a href="https://www.instagram.com/rockisland_events/" target="_blank" rel="noopener">Rock Island Events</a>
   </footer>
 
-  <script src="/bands.js?v=artistpop1"></script>
-  <script>
-    const STATS = Object.create(null);
-    const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
+<script>
+  async function loadBands(){
+    await new Promise((resolve)=>{
+      const s=document.createElement('script');
+      s.src='/bands.js?v=index';
+      s.onload=resolve; s.onerror=resolve;
+      document.head.appendChild(s);
+    });
+    return Array.isArray(window.BANDS)?window.BANDS:[];
+  }
 
-    function applyManualStats() {
-      for (const b of BANDS) {
-        if (!b.manualStats) continue;
-        if (!STATS[b.name]) STATS[b.name] = {};
-        const m = b.manualStats;
-        if (Number.isFinite(m.instagramFollowers)) STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
-        if (Number.isFinite(m.facebookFollowers)) STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
-        if (typeof b.bio === "string" && b.bio.trim()) STATS[b.name].bio = b.bio.trim();
-      }
-    }
-    function byName(a,b){ return a.name.localeCompare(b.name); }
-    function ytId(url){
-      if(!url) return null;
-      try{
-        const u = new URL(url.replace("music.youtube.com","www.youtube.com"));
-        const v = u.searchParams.get('v');
-        if(v) return v;
-        const parts = u.pathname.split('/').filter(Boolean);
-        const i = parts.indexOf('shorts');
-        if (i !== -1 && parts[i+1]) return parts[i+1];
-      }catch(e){}
-      return null;
-    }
-    function spotifyTrackEmbedFromUrl(raw){
-      try{
-        const u = new URL(raw.replace("?si","/ignore?si"));
-        const parts = u.pathname.split("/").filter(Boolean);
-        if (parts[0] === "track" && parts[1]) {
-          return `https://open.spotify.com/embed/track/${parts[1]}`;
-        }
-      }catch{}
-      return null;
-    }
-    function renderSummary(){
-      document.getElementById('totalCount').textContent = BANDS.length;
-      const tb = document.getElementById('alphabetical');
-      tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
-    }
-    function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
-    function renderBoards(){
-      const metrics = [
-        { key:'spotifyPopularity', target:'board-spotify', label:'score' },
-        { key:'facebookFollowers', target:'board-facebook', label:'followers' },
-        { key:'youtubeViews', target:'board-youtube', label:'views' },
-        { key:'instagramFollowers', target:'board-instagram', label:'followers' },
-      ];
-      metrics.forEach(m => {
-        const list = [...BANDS]
-          .map(b=>({ name:b.name, val:metric(b.name,m.key) }))
-          .sort((a,b)=>b.val-a.val)
-          .slice(0,6);
-        document.getElementById(m.target).innerHTML =
-          list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
-      });
-    }
-    function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
-    function bandCardHTML(b){
-      const featuredId = ytId(b.youtube);
-      const liveId = ytId(b.liveYoutube);
-      const sameVideo = featuredId && liveId && featuredId === liveId;
-      const featured = featuredId
-        ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>`
-        : `<div class="stat">No featured video</div>`;
-      const live = liveId && !sameVideo
-        ? `<div class="subhead">Live video</div><iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>`
-        : ``;
-      const websiteUrl = Array.isArray(b.otherLinks) && b.otherLinks.length ? b.otherLinks[0] : "";
-      const socials = [
-        link('Spotify', b.spotify),
-        link('Facebook', b.facebookUrl),
-        link('YouTube', b.youtube),
-        link('Instagram', b.instagramUrl),
-        websiteUrl ? link('Website', websiteUrl) : ''
-      ].filter(Boolean).join(' ');
-      return `
-        <article class="band-card" data-band="${b.name}">
-          <div class="band-head">
-            <div>
-              <div class="band-name">${b.name}</div>
-              <div class="muted">${b.city ? b.city+" · " : ""}${b.genre||""}</div>
-            </div>
-            <div class="links">${socials}</div>
-          </div>
-          <div class="band-body">
-            <div>
-              <div class="pill">Featured video</div>
-              ${featured}
-              ${live}
-              <div class="pill" style="margin-top:12px">Spotify</div>
-              <div data-slot="spotify">Spotify player will load here</div>
-              <div class="lead" data-slot="spotifyTitle" style="margin-top:6px"></div>
-            </div>
-            <div class="stats">
-              <div class="stat"><span>Instagram followers</span> <b data-stat="instagramFollowers">0</b></div>
-              <div class="stat"><span>Facebook followers</span> <b data-stat="facebookFollowers">0</b></div>
-              <div class="stat"><span>Top YouTube video views</span> <b data-stat="youtubeViews">0</b></div>
-              <div class="stat"><span>Artist Popularity Score on Spotify (0-100)</span> <b data-stat="spotifyPopularity">0</b></div>
-              <div class="stat" style="display:block">
-                <div class="pill">Bio</div>
-                <p class="lead" data-slot="bio" style="margin:8px 0 0">${(b.bio||'').trim() || 'Bio will populate once connected.'}</p>
-              </div>
-            </div>
-          </div>
-        </article>`;
-    }
-    function renderBands(){
-      const wrap = document.getElementById('bands');
-      wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
-    }
-    function patchBandCard(name){
-      const data = STATS[name] || {};
-      const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
-      if (!card) return;
-      const sp = card.querySelector("[data-slot=spotify]");
-      const spTitle = card.querySelector("[data-slot=spotifyTitle]");
-      const bio = card.querySelector("[data-slot=bio]");
-      if (sp && data.spotifyEmbed) sp.innerHTML = `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${data.spotifyEmbed}"></iframe>`;
-      if (spTitle && data.trackName) spTitle.textContent = data.trackName;
-      if (bio && data.bio) bio.textContent = data.bio;
-      ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
-        const el = card.querySelector(`[data-stat="${key}"]`);
-        if (el) el.textContent = (data[key] || 0).toLocaleString();
-      });
-    }
-    async function getJSON(u){ try{ const r = await fetch(u); return await r.json(); }catch{ return null; } }
-    async function loadBandLive(b){
-      const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
-      const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
-      const prev = STATS[b.name] || {};
-      let forcedEmbed = null;
-      if (b.spotifyEmbedTrack) forcedEmbed = spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack);
-      STATS[b.name] = {
-        ...prev,
-        youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
-        spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
-        spotifyEmbed: forcedEmbed || sp?.embedUrl || prev.spotifyEmbed || null,
-        trackName: sp?.trackName ?? prev.trackName ?? null
-      };
-      patchBandCard(b.name);
-    }
-    async function loadAllLive(){
-      await Promise.all(BANDS.map(loadBandLive));
-      renderBoards();
-    }
-    document.getElementById('year').textContent = new Date().getFullYear();
-    renderSummary(); renderBands(); applyManualStats(); renderBoards(); loadAllLive();
-  </script>
+  function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  async function main(){
+    const bands=await loadBands();
+    const wrap=document.getElementById('bands');
+    wrap.innerHTML=bands.map(b=>{
+      const ytid=b.youtube?.split('v=')[1]?.split('&')[0]||'';
+      const media=ytid?`<iframe src="https://www.youtube-nocookie.com/embed/${ytid}" allowfullscreen></iframe>`:'';
+      return `<article class="band-card">
+        <h3>${esc(b.name)}</h3>
+        <div class="meta">${esc(b.city||'')}${b.city&&b.genre?' · ':''}${esc(b.genre||'')}</div>
+        ${media}
+        <div class="stats">
+          ${b.facebook?`<span>Facebook</span>`:''}
+          ${b.instagram?`<span>Instagram</span>`:''}
+        </div>
+      </article>`;
+    }).join('');
+  }
+  main();
+</script>
 </body>
 </html>
