@@ -10,6 +10,11 @@
       --bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;
       --red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35);
       --green:#2a6b3a;
+      /* Antique gold palette */
+      --gold-1:#d9bf77;   /* light */
+      --gold-2:#a17b24;   /* mid */
+      --gold-3:#7b5d16;   /* deep edge */
+      --gold-text:#d5c27a; /* readable gold for headings */
     }
     *{box-sizing:border-box}
     body{
@@ -37,7 +42,7 @@
       border:1px solid #2b2023;border-radius:16px;padding:20px;
       box-shadow:0 18px 40px rgba(0,0,0,.45)
     }
-    .h2{font-size:22px;margin:0 0 10px}
+    .h2{font-size:22px;margin:0 0 10px;font-weight:800} /* keep bold & white */
     .lead{color:var(--muted)}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
@@ -48,7 +53,13 @@
     tbody tr:hover{background:rgba(179,18,31,.08)}
     .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
     @media (max-width:800px){.boards{grid-template-columns:1fr}}
-    .board h3{margin:0 0 8px;color:var(--lava)} /* orange headings */
+
+    /* Leaderboard sub-headings in antique gold, not bold */
+    .board h3{
+      margin:0 0 8px;
+      color:var(--gold-text);
+      font-weight:400;
+    }
 
     .rank-list{list-style:none;margin:0;padding:0}
     .rank-list li{
@@ -65,7 +76,7 @@
     }
     .band-name{font-weight:800;font-size:18px}
     .links{display:flex;gap:12px;flex-wrap:wrap}
-    .links a{font-size:13px;color:var(--lava)}
+    .links a{font-size:13px;color:#ff5a1f} /* keep social links orange */
     .band-body{padding:14px 16px;display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
     .subhead{margin:10px 0 6px;font-weight:700;color:#ffefe9}
     .pill{
@@ -80,15 +91,16 @@
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
 
-    /* top-right nav buttons: larger + orange background */
+    /* Top-right nav buttons: antique gold gradient, white non-bold text */
     .nav-btn{
       display:inline-flex;align-items:center;gap:8px;
-      background:var(--lava); color:#0a0a0b; border:1px solid #2b2023;
-      padding:10px 14px; border-radius:12px; font-weight:700; font-size:15px;
+      background:linear-gradient(135deg,var(--gold-1),var(--gold-2) 55%,var(--gold-3));
+      color:#fff; border:1px solid #2b2023;
+      padding:10px 14px; border-radius:12px; font-weight:400; font-size:15px;
     }
-    .nav-btn:hover{filter:brightness(0.95)}
+    .nav-btn:hover{filter:brightness(1.03)}
 
-    /* big green CTA */
+    /* Big green CTA unchanged */
     .cta{
       display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;
       border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700
@@ -113,7 +125,6 @@
   </header>
 
   <main class="container">
-    <!-- Applications summary -->
     <section class="section card" id="summary">
       <div class="h2">Applications</div>
       <p class="lead"><span class="pill">Total</span> <b id="totalCount">0</b></p>
@@ -125,10 +136,8 @@
       </div>
     </section>
 
-    <!-- Band profiles -->
     <section class="section" id="bands"></section>
 
-    <!-- Leaderboards at the end -->
     <section class="section card" id="leaderboards">
       <div class="h2">Leaderboards</div>
       <div class="boards">
@@ -137,7 +146,6 @@
         <div class="board"><h3>YouTube video views</h3><ol class="rank-list" id="board-youtube"></ol></div>
         <div class="board"><h3>Instagram followers</h3><ol class="rank-list" id="board-instagram"></ol></div>
       </div>
-
       <a class="cta green" href="/judge.html">Go to Judges Scoring Page</a>
     </section>
   </main>
@@ -151,9 +159,7 @@
     </div>
   </footer>
 
-  <!-- Load band data -->
   <script src="/bands.js?v=artistpop1"></script>
-
   <script>
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
@@ -168,9 +174,7 @@
         if (typeof b.bio === "string" && b.bio.trim()) STATS[b.name].bio = b.bio.trim();
       }
     }
-
     function byName(a,b){ return a.name.localeCompare(b.name); }
-
     function ytId(url){
       if(!url) return null;
       try{
@@ -183,7 +187,6 @@
       }catch(e){}
       return null;
     }
-
     function spotifyTrackEmbedFromUrl(raw){
       try{
         const u = new URL(raw.replace("?si","/ignore?si"));
@@ -194,15 +197,12 @@
       }catch{}
       return null;
     }
-
     function renderSummary(){
       document.getElementById('totalCount').textContent = BANDS.length;
       const tb = document.getElementById('alphabetical');
       tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
     }
-
     function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
-
     function renderBoards(){
       const metrics = [
         { key:'spotifyPopularity', target:'board-spotify', label:'score' },
@@ -219,22 +219,17 @@
           list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
       });
     }
-
     function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
-
     function bandCardHTML(b){
       const featuredId = ytId(b.youtube);
       const liveId = ytId(b.liveYoutube);
       const sameVideo = featuredId && liveId && featuredId === liveId;
-
       const featured = featuredId
         ? `<iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${featuredId}"></iframe>`
         : `<div class="stat">No featured video</div>`;
-
       const live = liveId && !sameVideo
         ? `<div class="subhead">Live video</div><iframe allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen src="https://www.youtube-nocookie.com/embed/${liveId}"></iframe>`
         : ``;
-
       const websiteUrl = Array.isArray(b.otherLinks) && b.otherLinks.length ? b.otherLinks[0] : "";
       const socials = [
         link('Spotify', b.spotify),
@@ -243,7 +238,6 @@
         link('Instagram', b.instagramUrl),
         websiteUrl ? link('Website', websiteUrl) : ''
       ].filter(Boolean).join(' ');
-
       return `
         <article class="band-card" data-band="${b.name}">
           <div class="band-head">
@@ -273,15 +267,12 @@
               </div>
             </div>
           </div>
-        </article>
-      `;
+        </article>`;
     }
-
     function renderBands(){
       const wrap = document.getElementById('bands');
       wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
     }
-
     function patchBandCard(name){
       const data = STATS[name] || {};
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
@@ -297,17 +288,13 @@
         if (el) el.textContent = (data[key] || 0).toLocaleString();
       });
     }
-
     async function getJSON(u){ try{ const r = await fetch(u); return await r.json(); }catch{ return null; } }
-
     async function loadBandLive(b){
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
       const sp = b.spotify ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(b.spotify)}&market=CY`) : null;
-
       const prev = STATS[b.name] || {};
       let forcedEmbed = null;
       if (b.spotifyEmbedTrack) forcedEmbed = spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack);
-
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
@@ -317,18 +304,12 @@
       };
       patchBandCard(b.name);
     }
-
     async function loadAllLive(){
       await Promise.all(BANDS.map(loadBandLive));
       renderBoards();
     }
-
     document.getElementById('year').textContent = new Date().getFullYear();
-    renderSummary();
-    renderBands();
-    applyManualStats();
-    renderBoards();
-    loadAllLive();
+    renderSummary(); renderBands(); applyManualStats(); renderBoards(); loadAllLive();
   </script>
 </body>
 </html>
