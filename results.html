@@ -23,7 +23,6 @@
   .right{text-align:right}
   .hidden{display:none}
   .boldwhite{font-weight:800;color:#fff;font-size:18px}
-  /* make readiness column pop */
   td.readiness{background:rgba(179,18,31,.12);font-weight:800}
 </style>
 </head>
@@ -31,17 +30,13 @@
 <header>
   <div class="container">
     <h2 style="margin:0 0 8px">Judging Results — Wacken Metal Battle Cyprus</h2>
-
-    <!-- PASSWORD GATE -->
     <div id="gate" class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <input id="adminPwd" type="password" autocomplete="current-password" placeholder="Admin / results password" />
       <button id="btnLoad" class="primary">Load results</button>
       <span id="status" class="meta"></span>
     </div>
-
-    <!-- CSV button only after load -->
-    <div style="display:flex;justify-content:flex-end">
-      <button id="btnCsv" class="hidden">Download Combined CSV</button>
+    <div id="csvWrap" class="hidden" style="display:flex;justify-content:flex-end">
+      <button id="btnCsv">Download Combined CSV</button>
     </div>
   </div>
 </header>
@@ -56,7 +51,7 @@
             <th>Band</th>
             <th class="right">Median rank</th>
             <th class="right">Avg rank</th>
-            <th class="right">Avg Musician­ship</th>
+            <th class="right">Avg Musicianship</th>
             <th class="right">Avg Originality</th>
             <th class="right">Avg Material</th>
             <th class="right">Avg Presence</th>
@@ -82,7 +77,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section id="explainCard" class="card hidden">
     <div class="h3" style="font-weight:700;margin:0 0 10px">How these results are calculated</div>
     <ul>
       <li>Each judge scores every band: Musicianship 40 percent, Originality 25 percent, Online Material Quality 20 percent, Online Presence 15 percent. These weights produce a judge’s single “readiness” score per band.</li>
@@ -107,6 +102,7 @@ const elGate  = document.getElementById('gate');
 const elPwd   = document.getElementById('adminPwd');
 const elLoad  = document.getElementById('btnLoad');
 const elCsv   = document.getElementById('btnCsv');
+const elCsvWrap = document.getElementById('csvWrap');
 const elStat  = document.getElementById('status');
 
 const elCard  = document.getElementById('resultsCard');
@@ -117,13 +113,14 @@ const elJudgesCard = document.getElementById('judgesCard');
 const elJudgesBody = document.getElementById('tbodyJudges');
 const elJudgeCount = document.getElementById('judgeCount');
 
+const elExplain = document.getElementById('explainCard');
+
 function readiness(s){ return s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p; }
 function avg(a){ return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; }
 function to2(n){ return Number(n).toFixed(2); }
 function byNum(a,b){ return a-b; }
 
 function perJudgeRanking(scoresByBand){
-  // scoresByBand: {Band:{m,o,q,p}} -> returns map Band->rank (1 best)
   const entries = Object.entries(scoresByBand).map(([band,s])=>({band, r:readiness(s)}));
   entries.sort((a,b)=>b.r-a.r);
   const out = {};
@@ -132,13 +129,11 @@ function perJudgeRanking(scoresByBand){
 }
 
 function combine(judgesObj){
-  // Build per-judge ranks
   const perJudge = {};
   for (const [judge, sheet] of Object.entries(judgesObj||{})) {
     perJudge[judge] = perJudgeRanking(sheet.scores||{});
   }
 
-  // Aggregate per band
   const bands = new Set();
   Object.values(judgesObj||{}).forEach(s=>{
     Object.keys(s.scores||{}).forEach(b=>bands.add(b));
@@ -165,9 +160,7 @@ function combine(judgesObj){
     });
   }
 
-  // Order by: consensus guardrails, then median rank, then avg rank, then readiness
   rows.sort((a,b)=>{
-    // lower rank is better
     if (a.medianRank !== b.medianRank) return a.medianRank - b.medianRank;
     if (a.avgRank !== b.avgRank) return a.avgRank - b.avgRank;
     if (a.readiness !== b.readiness) return b.readiness - a.readiness;
@@ -189,7 +182,6 @@ function renderJudges(entries){
       <td><button data-del="${e.judgekey}">Delete</button></td>
     </tr>`;
   }).join('');
-  // bind delete
   elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = async ()=>{
       if (!confirm('Delete this judge submission?')) return;
@@ -202,7 +194,7 @@ function renderJudges(entries){
       });
       const t = await r.text();
       if (!r.ok) { try{ alert(JSON.parse(t).error) }catch{ alert('Delete failed') } ; return; }
-      loadResults(); // refresh
+      loadResults();
     };
   });
 }
@@ -252,9 +244,10 @@ function downloadCsv(judgesObj){
 }
 
 async function loadResults(){
-  elCsv.classList.add('hidden');
+  elCsvWrap.classList.add('hidden');
   elCard.classList.add('hidden');
   elJudgesCard.classList.add('hidden');
+  elExplain.classList.add('hidden');
   elStat.textContent = 'Loading…';
 
   const pwd = elPwd.value.trim();
@@ -275,22 +268,24 @@ async function loadResults(){
 
   let data = {};
   try { data = JSON.parse(text); } catch {}
-  const judges = data.judges || {};
-  const entries = data.entries || [];
 
-  // hide the gate now that we loaded successfully
+  // Success: hide gate and show the rest of the page
   elGate.classList.add('hidden');
   elStat.textContent = '';
+
+  const judges = data.judges || {};
+  const entries = data.entries || {};
 
   renderResults(judges);
   renderJudges(entries);
 
-  elCsv.classList.remove('hidden');
+  elCsvWrap.classList.remove('hidden');
   elCsv.onclick = () => downloadCsv(judges);
   elJudgesCard.classList.remove('hidden');
+  elExplain.classList.remove('hidden');
 }
 
-document.getElementById('btnLoad').addEventListener('click', loadResults);
+elLoad.addEventListener('click', loadResults);
 </script>
 </body>
 </html>
