@@ -8,46 +8,11 @@ function bad(msg, code = 400) {
   });
 }
 
-/**
- * Upstash KV listing: /keys/{cursor}?prefix=...&limit=...
- * Returns shapes like:
- *   { result: { keys: ["k1","k2"], cursor: "next" } }
- * or sometimes { keys:[...], cursor:"..." }
- * We iterate until cursor === "0" or empty.
- */
-async function listKeysKV(url, token, prefix, limit = 200) {
-  const keys = [];
-  let cursor = '0';
-
-  while (true) {
-    const u = `${url}/keys/${encodeURIComponent(cursor)}?prefix=${encodeURIComponent(prefix)}&limit=${limit}`;
-    const res = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`KV keys failed: ${t || res.status}`);
-    }
-    const data = await res.json();
-
-    // Normalize possible shapes
-    const payload = data?.result || data;
-    const batch = Array.isArray(payload?.keys) ? payload.keys : [];
-    const next = String(payload?.cursor ?? '0');
-
-    for (const k of batch) if (typeof k === 'string') keys.push(k);
-    if (next === '0' || batch.length === 0) break;
-    cursor = next;
-  }
-  return keys;
-}
-
-/**
- * Fallback for Upstash Redis (if you ever swap products): /scan/{cursor}?match=...&count=...
- * We only call this if KV listing throws.
- */
-async function listKeysRedis(url, token, prefix, count = 200) {
+async function scanAllWithPrefix(url, token, prefix) {
   const keys = [];
   let cursor = '0';
   const match = encodeURIComponent(`${prefix}*`);
+  const count = 200;
 
   do {
     const res = await fetch(`${url}/scan/${cursor}?match=${match}&count=${count}`, {
@@ -55,7 +20,7 @@ async function listKeysRedis(url, token, prefix, count = 200) {
     });
     if (!res.ok) {
       const t = await res.text();
-      throw new Error(`Redis SCAN failed: ${t || res.status}`);
+      throw new Error(`SCAN failed: ${t || res.status}`);
     }
     const data = await res.json();
 
@@ -70,9 +35,7 @@ async function listKeysRedis(url, token, prefix, count = 200) {
       batch = data.keys || data.results || data.result || [];
     }
 
-    for (const k of batch) {
-      if (typeof k === 'string' && k.startsWith(prefix)) keys.push(k);
-    }
+    for (const k of batch) if (typeof k === 'string' && k.startsWith(prefix)) keys.push(k);
     cursor = nextCursor;
   } while (cursor !== '0');
 
@@ -85,6 +48,8 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
+    const dbg = body?.debug ? true : false;
+
     const ok = !!(process.env.RESULTS_PASSWORD) && password === process.env.RESULTS_PASSWORD;
     if (!ok) return bad('Unauthorized', 401);
 
@@ -94,15 +59,8 @@ export default async function handler(req) {
 
     const prefix = 'wmb:scores:';
 
-    // Prefer KV listing; if not available, fall back to Redis SCAN.
-    let keys = [];
-    try {
-      keys = await listKeysKV(url, token, prefix);
-    } catch {
-      keys = await listKeysRedis(url, token, prefix);
-    }
+    const keys = await scanAllWithPrefix(url, token, prefix);
 
-    // Fetch values
     const entries = [];
     for (const key of keys) {
       const getRes = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
@@ -110,22 +68,19 @@ export default async function handler(req) {
       });
       if (!getRes.ok) continue;
       const g = await getRes.json();
-      const raw = g?.result;
-      if (!raw) continue;
+      if (!g?.result) continue;
+
       try {
-        const obj = JSON.parse(decodeURIComponent(raw));
+        const obj = JSON.parse(decodeURIComponent(g.result));
         entries.push({
           judge: obj.judge || '',
           judgekey: obj.judgekey || key.replace(prefix, ''),
           scores: obj.scores || {},
           ts: Number(obj.ts) || 0
         });
-      } catch {
-        // ignore malformed entries
-      }
+      } catch {}
     }
 
-    // Shape expected by frontend
     const judges = {};
     for (const e of entries) {
       judges[e.judge || e.judgekey] = {
@@ -135,10 +90,13 @@ export default async function handler(req) {
       };
     }
 
-    return new Response(JSON.stringify({ ok: true, count: entries.length, entries, judges }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' }
-    });
+    return new Response(JSON.stringify({
+      ok: true,
+      count: entries.length,
+      judges,
+      entries,
+      ...(dbg ? { scannedKeys: keys } : {})
+    }), { status: 200, headers: { 'content-type': 'application/json' }});
   } catch (e) {
     return bad(e?.message || 'Server error', 500);
   }
