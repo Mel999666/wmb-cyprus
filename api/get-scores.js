@@ -8,6 +8,44 @@ function bad(msg, code = 400) {
   });
 }
 
+async function scanAllWithPrefix(url, token, prefix) {
+  // Robust SCAN loop that handles different Upstash JSON shapes
+  const keys = [];
+  let cursor = '0';
+  const match = encodeURIComponent(`${prefix}*`);
+  const count = 200;
+
+  do {
+    const res = await fetch(`${url}/scan/${cursor}?match=${match}&count=${count}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`SCAN failed: ${t || res.status}`);
+    }
+    const data = await res.json();
+
+    // Upstash can return {cursor:"...", keys:[...]} OR {cursor:"...", results:[...]} OR ["cursor", ["k1","k2"]]
+    let nextCursor = '0';
+    let batch = [];
+
+    if (Array.isArray(data) && data.length >= 2) {
+      nextCursor = String(data[0] ?? '0');
+      batch = Array.isArray(data[1]) ? data[1] : [];
+    } else {
+      nextCursor = String(data.cursor ?? data.next_cursor ?? '0');
+      batch = data.keys || data.results || data.result || [];
+    }
+
+    for (const k of batch) {
+      if (typeof k === 'string' && k.startsWith(prefix)) keys.push(k);
+    }
+    cursor = nextCursor;
+  } while (cursor !== '0');
+
+  return keys;
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
@@ -22,18 +60,11 @@ export default async function handler(req) {
     if (!url || !token) return bad('KV not configured', 500);
 
     const prefix = 'wmb:scores:';
-    // List keys
-    const listRes = await fetch(`${url}/list/${encodeURIComponent(prefix)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!listRes.ok) {
-      const t = await listRes.text();
-      return bad(`KV list failed: ${t || listRes.status}`, 500);
-    }
-    const listData = await listRes.json();
-    const keys = Array.isArray(listData?.result) ? listData.result : [];
 
-    // Fetch each value
+    // 1) enumerate all judge keys with SCAN
+    const keys = await scanAllWithPrefix(url, token, prefix);
+
+    // 2) fetch values
     const entries = [];
     for (const key of keys) {
       const getRes = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
@@ -42,19 +73,21 @@ export default async function handler(req) {
       if (!getRes.ok) continue;
       const g = await getRes.json();
       if (!g?.result) continue;
+
       try {
         const obj = JSON.parse(decodeURIComponent(g.result));
-        // expect { judge, judgekey, scores, ts }
         entries.push({
           judge: obj.judge || '',
-          judgekey: obj.judgekey || key.replace(prefix,''),
+          judgekey: obj.judgekey || key.replace(prefix, ''),
           scores: obj.scores || {},
           ts: Number(obj.ts) || 0
         });
-      } catch {}
+      } catch {
+        // ignore bad payloads
+      }
     }
 
-    // Build judges object the frontend already expects
+    // 3) build the shape the frontend expects
     const judges = {};
     for (const e of entries) {
       judges[e.judge || e.judgekey] = {
@@ -64,11 +97,11 @@ export default async function handler(req) {
       };
     }
 
-    return new Response(JSON.stringify({ ok:true, count: entries.length, entries, judges }), {
+    return new Response(JSON.stringify({ ok: true, count: entries.length, entries, judges }), {
       status: 200,
       headers: { 'content-type': 'application/json' }
     });
   } catch (e) {
-    return bad('Server error', 500);
+    return bad(e?.message || 'Server error', 500);
   }
 }
