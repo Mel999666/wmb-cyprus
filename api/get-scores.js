@@ -8,12 +8,46 @@ function bad(msg, code = 400) {
   });
 }
 
-async function scanAllWithPrefix(url, token, prefix) {
-  // Robust SCAN loop that handles different Upstash JSON shapes
+/**
+ * Upstash KV listing: /keys/{cursor}?prefix=...&limit=...
+ * Returns shapes like:
+ *   { result: { keys: ["k1","k2"], cursor: "next" } }
+ * or sometimes { keys:[...], cursor:"..." }
+ * We iterate until cursor === "0" or empty.
+ */
+async function listKeysKV(url, token, prefix, limit = 200) {
+  const keys = [];
+  let cursor = '0';
+
+  while (true) {
+    const u = `${url}/keys/${encodeURIComponent(cursor)}?prefix=${encodeURIComponent(prefix)}&limit=${limit}`;
+    const res = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`KV keys failed: ${t || res.status}`);
+    }
+    const data = await res.json();
+
+    // Normalize possible shapes
+    const payload = data?.result || data;
+    const batch = Array.isArray(payload?.keys) ? payload.keys : [];
+    const next = String(payload?.cursor ?? '0');
+
+    for (const k of batch) if (typeof k === 'string') keys.push(k);
+    if (next === '0' || batch.length === 0) break;
+    cursor = next;
+  }
+  return keys;
+}
+
+/**
+ * Fallback for Upstash Redis (if you ever swap products): /scan/{cursor}?match=...&count=...
+ * We only call this if KV listing throws.
+ */
+async function listKeysRedis(url, token, prefix, count = 200) {
   const keys = [];
   let cursor = '0';
   const match = encodeURIComponent(`${prefix}*`);
-  const count = 200;
 
   do {
     const res = await fetch(`${url}/scan/${cursor}?match=${match}&count=${count}`, {
@@ -21,11 +55,10 @@ async function scanAllWithPrefix(url, token, prefix) {
     });
     if (!res.ok) {
       const t = await res.text();
-      throw new Error(`SCAN failed: ${t || res.status}`);
+      throw new Error(`Redis SCAN failed: ${t || res.status}`);
     }
     const data = await res.json();
 
-    // Upstash can return {cursor:"...", keys:[...]} OR {cursor:"...", results:[...]} OR ["cursor", ["k1","k2"]]
     let nextCursor = '0';
     let batch = [];
 
@@ -61,10 +94,15 @@ export default async function handler(req) {
 
     const prefix = 'wmb:scores:';
 
-    // 1) enumerate all judge keys with SCAN
-    const keys = await scanAllWithPrefix(url, token, prefix);
+    // Prefer KV listing; if not available, fall back to Redis SCAN.
+    let keys = [];
+    try {
+      keys = await listKeysKV(url, token, prefix);
+    } catch {
+      keys = await listKeysRedis(url, token, prefix);
+    }
 
-    // 2) fetch values
+    // Fetch values
     const entries = [];
     for (const key of keys) {
       const getRes = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
@@ -72,10 +110,10 @@ export default async function handler(req) {
       });
       if (!getRes.ok) continue;
       const g = await getRes.json();
-      if (!g?.result) continue;
-
+      const raw = g?.result;
+      if (!raw) continue;
       try {
-        const obj = JSON.parse(decodeURIComponent(g.result));
+        const obj = JSON.parse(decodeURIComponent(raw));
         entries.push({
           judge: obj.judge || '',
           judgekey: obj.judgekey || key.replace(prefix, ''),
@@ -83,11 +121,11 @@ export default async function handler(req) {
           ts: Number(obj.ts) || 0
         });
       } catch {
-        // ignore bad payloads
+        // ignore malformed entries
       }
     }
 
-    // 3) build the shape the frontend expects
+    // Shape expected by frontend
     const judges = {};
     for (const e of entries) {
       judges[e.judge || e.judgekey] = {
