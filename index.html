@@ -10,19 +10,16 @@
       --bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;
       --red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35);
       --green:#2a6b3a;
-      /* Maroon gradient (lighter -> base -> deep) */
-      --maroon-1:#e05563;
-      --maroon-2:#c21a25;
-      --maroon-3:#8f1220;
-      --maroon-text:#d86a74; /* readable maroon for headings */
+      --maroon-1:#e05563; --maroon-2:#c21a25; --maroon-3:#8f1220; --maroon-text:#d86a74;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
-                 linear-gradient(180deg,#0d0b0d,#080708 65%);
+      background:
+        radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
+        linear-gradient(180deg,#0d0b0d,#080708 65%);
       color:var(--text);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
     }
     a{color:var(--text);text-decoration:none}
     a:focus{outline:2px solid var(--ring);outline-offset:3px;border-radius:8px}
@@ -53,14 +50,7 @@
     tbody tr:hover{background:rgba(179,18,31,.08)}
     .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
     @media (max-width:800px){.boards{grid-template-columns:1fr}}
-
-    /* Leaderboard sub-headings white */
-    .board h3{
-      margin:0 0 8px;
-      color:#fff;
-      font-weight:700;
-    }
-
+    .board h3{margin:0 0 8px;color:#fff;font-weight:700}
     .rank-list{list-style:none;margin:0;padding:0}
     .rank-list li{
       display:flex;justify-content:space-between;gap:12px;padding:10px 12px;
@@ -68,7 +58,6 @@
     }
     .rank-list li span:first-child{font-weight:700}
     .rank-list li .meta{color:var(--muted)}
-
     .band-card{border:1px solid #2b2023;border-radius:16px;overflow:hidden;background:#120f10;margin-bottom:18px}
     .band-head{
       display:flex;justify-content:space-between;align-items:center;
@@ -76,7 +65,7 @@
     }
     .band-name{font-weight:800;font-size:18px}
     .links{display:flex;gap:12px;flex-wrap:wrap}
-    .links a{font-size:13px;color:#ff5a1f} /* keep social links orange */
+    .links a{font-size:13px;color:#ff5a1f}
     .band-body{padding:14px 16px;display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
     .subhead{margin:10px 0 6px;font-weight:700;color:#ffefe9}
     .pill{
@@ -90,25 +79,20 @@
     }
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
-
-    /* Top-right nav buttons use maroon-3 */
+    /* Spotify slot height (official small player) */
+    .spotify-slot iframe{height:152px;min-height:152px;background:transparent}
     .nav-btn{
       display:inline-flex;align-items:center;gap:8px;
-      background: var(--maroon-3);
-      color:#fff;
-      border:1px solid var(--maroon-3);
+      background: var(--maroon-3); color:#fff; border:1px solid var(--maroon-3);
       padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
     }
-    .nav-btn:hover{ filter: brightness(1.05); }
-
-    /* CTA stays green */
+    .nav-btn:hover{ filter: brightness(1.05) }
     .cta{
       display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;
       border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700
     }
     .cta.green{background:var(--green);border-color:var(--green);color:#fff}
     .cta.green:hover{filter:brightness(1.05)}
-
     footer{border-top:1px solid #2b2023;color:var(--muted)}
     .muted{color:var(--muted)}
   </style>
@@ -160,8 +144,8 @@
     </div>
   </footer>
 
-  <!-- IMPORTANT: bump version so the browser picks up the new band fields -->
-<script src="/bands.js?v=artistpop3"></script>
+  <!-- bump query so browsers fetch latest -->
+  <script src="/bands.js?v=artistpop5"></script>
   <script>
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
@@ -172,35 +156,49 @@
     function ytId(url){
       if(!url) return null;
       try{
+        // normalise music.youtube to www
         const u = new URL(url.replace("music.youtube.com","www.youtube.com"));
+        // standard watch?v=
         const v = u.searchParams.get('v');
         if(v) return v;
+        // shorts
         const parts = u.pathname.split('/').filter(Boolean);
         const i = parts.indexOf('shorts');
         if (i !== -1 && parts[i+1]) return parts[i+1];
+        // share links like youtu.be/<id>
+        if (u.hostname === 'youtu.be' && parts[0]) return parts[0];
       }catch(e){}
       return null;
     }
 
-    function spotifyTrackEmbedFromUrl(raw){
+    // Build a clean Spotify EMBED URL from any track URL you paste in bands.js (intl prefixes & query ok)
+    function toSpotifyEmbedTrack(raw){
+      if (!raw) return null;
       try{
-        const u = new URL(raw.replace("?si","/ignore?si"));
-        const parts = u.pathname.split("/").filter(Boolean);
-        if (parts[0] === "track" && parts[1]) {
-          return `https://open.spotify.com/embed/track/${parts[1]}`;
+        const u = new URL(raw);
+        if (!/open\.spotify\.com$/.test(u.hostname)) return null;
+        // strip any locale prefix e.g. /intl-xx/
+        const segs = u.pathname.split('/').filter(Boolean);
+        const idx = segs.indexOf('track');
+        if (idx !== -1 && segs[idx+1]) {
+          const id = segs[idx+1].split('?')[0];
+          return `https://open.spotify.com/embed/track/${id}`;
         }
-      }catch{}
+      }catch(e){}
       return null;
     }
 
     function isSpotifyArtistUrl(u){
       try{
         const x = new URL(u);
-        return x.hostname.includes("open.spotify.com") && x.pathname.startsWith("/artist/");
+        if (!/open\.spotify\.com$/.test(x.hostname)) return false;
+        const segs = x.pathname.split('/').filter(Boolean);
+        const idx = segs.indexOf('artist');
+        return idx !== -1 && !!segs[idx+1];
       }catch{return false;}
     }
 
-    /* ---------- manual stats/bios ---------- */
+    /* ---------- manual stats & bios ---------- */
     function applyManualStats() {
       for (const b of BANDS) {
         if (!b.manualStats) continue;
@@ -208,10 +206,9 @@
         const m = b.manualStats;
         if (Number.isFinite(m.instagramFollowers)) STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
         if (Number.isFinite(m.facebookFollowers)) STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
-        // prefer manualStats.bio, else b.bio
         const bioText = (typeof m.bio === "string" && m.bio.trim())
-            ? m.bio.trim()
-            : (typeof b.bio === "string" && b.bio.trim() ? b.bio.trim() : "");
+          ? m.bio.trim()
+          : (typeof b.bio === "string" && b.bio.trim() ? b.bio.trim() : "");
         if (bioText) STATS[b.name].bio = bioText;
       }
     }
@@ -220,12 +217,25 @@
       const data = STATS[name] || {};
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
       if (!card) return;
+
       const sp = card.querySelector("[data-slot=spotify]");
       const spTitle = card.querySelector("[data-slot=spotifyTitle]");
       const bio = card.querySelector("[data-slot=bio]");
-      if (sp && data.spotifyEmbed) sp.innerHTML = `<iframe allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${data.spotifyEmbed}"></iframe>`;
+
+      if (sp && data.spotifyEmbed) {
+        sp.innerHTML = `
+          <iframe
+            src="${data.spotifyEmbed}?utm_source=generator"
+            width="100%"
+            height="152"
+            frameborder="0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"></iframe>`;
+      }
+
       if (spTitle && data.trackName) spTitle.textContent = data.trackName;
       if (bio && data.bio) bio.textContent = data.bio;
+
       ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
         const el = card.querySelector(`[data-stat="${key}"]`);
         if (el) el.textContent = (data[key] || 0).toLocaleString();
@@ -240,7 +250,8 @@
     function renderSummary(){
       document.getElementById('totalCount').textContent = BANDS.length;
       const tb = document.getElementById('alphabetical');
-      tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
+      tb.innerHTML = [...BANDS].sort(byName)
+        .map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
     }
 
     function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
@@ -301,7 +312,7 @@
               ${featured}
               ${live}
               <div class="pill" style="margin-top:12px">Spotify</div>
-              <div data-slot="spotify">Spotify player will load here</div>
+              <div data-slot="spotify" class="spotify-slot">Spotify player will load here</div>
               <div class="lead" data-slot="spotifyTitle" style="margin-top:6px"></div>
             </div>
             <div class="stats">
@@ -330,10 +341,10 @@
     }
 
     async function loadBandLive(b){
-      // YouTube top view count from featured video
+      // YouTube top view count from FEATURED video only
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
 
-      // Popularity must come from ARTIST url only
+      // Popularity must come from a true ARTIST url only
       const artistUrl =
         (b.spotifyArtist && isSpotifyArtistUrl(b.spotifyArtist)) ? b.spotifyArtist :
         (b.spotify && isSpotifyArtistUrl(b.spotify)) ? b.spotify :
@@ -343,15 +354,15 @@
         ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(artistUrl)}&market=CY`)
         : null;
 
-      const prev = STATS[b.name] || {};
-      // Embed always prefers the explicit track given
-      const forcedEmbed = b.spotifyEmbedTrack ? spotifyTrackEmbedFromUrl(b.spotifyEmbedTrack) : null;
+      // Build an embed URL from the exact track link you provided
+      const forcedEmbed = b.spotifyEmbedTrack ? toSpotifyEmbedTrack(b.spotifyEmbedTrack) : null;
 
+      const prev = STATS[b.name] || {};
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
         spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
-        spotifyEmbed: forcedEmbed || sp?.embedUrl || prev.spotifyEmbed || null,
+        spotifyEmbed: forcedEmbed || prev.spotifyEmbed || null,
         trackName: sp?.trackName ?? prev.trackName ?? null
       };
 
@@ -367,10 +378,10 @@
     document.getElementById('year').textContent = new Date().getFullYear();
     renderSummary();
     renderBands();
-    applyManualStats();       // put your manual bios and numbers in STATS
-    patchAllCardsFromStats(); // immediately reflect bios on the cards
+    applyManualStats();       // fill bios + manual counts
+    patchAllCardsFromStats(); // show bios immediately
     renderBoards();
-    loadAllLive();            // then hydrate live metrics + embeds
+    loadAllLive();            // hydrate live metrics + spotify embed
   </script>
 </body>
 </html>
