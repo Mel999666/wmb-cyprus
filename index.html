@@ -5,91 +5,69 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Wacken Metal Battle Cyprus — Applications</title>
   <meta name="description" content="Public showcase of bands that applied for Wacken Metal Battle Cyprus." />
+
+  <!-- Performance & reliability for third-party iframes -->
+  <link rel="preconnect" href="https://open.spotify.com" crossorigin>
+  <link rel="preconnect" href="https://i.scdn.co" crossorigin>
+  <link rel="preconnect" href="https://www.youtube-nocookie.com" crossorigin>
+  <link rel="preconnect" href="https://www.youtube.com" crossorigin>
+  <link rel="dns-prefetch" href="//open.spotify.com">
+  <link rel="dns-prefetch" href="//i.scdn.co">
+  <link rel="dns-prefetch" href="//www.youtube-nocookie.com">
+  <link rel="dns-prefetch" href="//www.youtube.com">
+
   <style>
     :root{
       --bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;
       --red:#8b0f17;--crimson:#b3121f;--lava:#ff5a1f;--ring:rgba(255,90,31,0.35);
-      --green:#2a6b3a;
-      --maroon-1:#e05563; --maroon-2:#c21a25; --maroon-3:#8f1220; --maroon-text:#d86a74;
+      --green:#2a6b3a; --maroon-1:#e05563; --maroon-2:#c21a25; --maroon-3:#8f1220; --maroon-text:#d86a74;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      background:
-        radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
-        linear-gradient(180deg,#0d0b0d,#080708 65%);
-      color:var(--text);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+      background:radial-gradient(1200px 640px at 50% -10%,rgba(255,90,31,.08),transparent),
+                 linear-gradient(180deg,#0d0b0d,#080708 65%);
+      color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
     }
     a{color:var(--text);text-decoration:none}
     a:focus{outline:2px solid var(--ring);outline-offset:3px;border-radius:8px}
     img{max-width:100%;display:block}
-    header{
-      position:sticky;top:0;z-index:50;
-      background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.65));
-      border-bottom:1px solid #231a1d;backdrop-filter:blur(8px)
-    }
+    header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.65));border-bottom:1px solid #231a1d;backdrop-filter:blur(8px)}
     .container{max-width:1140px;margin:0 auto;padding:20px}
     .nav{display:flex;align-items:center;gap:16px}
     .site-title{font-size:clamp(22px,4vw,36px);font-weight:800;letter-spacing:.3px}
     .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
     .section{padding:28px 0}
-    .card{
-      background:linear-gradient(180deg,#181316,#110f10);
-      border:1px solid #2b2023;border-radius:16px;padding:20px;
-      box-shadow:0 18px 40px rgba(0,0,0,.45)
-    }
+    .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:16px;padding:20px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
     .h2{font-size:22px;margin:0 0 10px;font-weight:800}
     .lead{color:var(--muted)}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
-    thead th{
-      font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:#ffefe9;
-      background:linear-gradient(180deg,rgba(179,18,31,.25),rgba(139,15,23,.08))
-    }
+    thead th{font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.25),rgba(139,15,23,.08))}
     tbody tr:hover{background:rgba(179,18,31,.08)}
     .boards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
     @media (max-width:800px){.boards{grid-template-columns:1fr}}
     .board h3{margin:0 0 8px;color:#fff;font-weight:700}
     .rank-list{list-style:none;margin:0;padding:0}
-    .rank-list li{
-      display:flex;justify-content:space-between;gap:12px;padding:10px 12px;
-      border:1px solid #2b2023;border-radius:12px;margin-bottom:8px;background:#120e0f
-    }
+    .rank-list li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #2b2023;border-radius:12px;margin-bottom:8px;background:#120e0f}
     .rank-list li span:first-child{font-weight:700}
     .rank-list li .meta{color:var(--muted)}
     .band-card{border:1px solid #2b2023;border-radius:16px;overflow:hidden;background:#120f10;margin-bottom:18px}
-    .band-head{
-      display:flex;justify-content:space-between;align-items:center;
-      padding:14px 16px;background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)
-    }
+    .band-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)}
     .band-name{font-weight:800;font-size:18px}
     .links{display:flex;gap:12px;flex-wrap:wrap}
     .links a{font-size:13px;color:#ff5a1f}
     .band-body{padding:14px 16px;display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
     .subhead{margin:10px 0 6px;font-weight:700;color:#ffefe9}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
-      background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:12px
-    }
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:12px}
     .stats{display:grid;gap:8px}
-    .stat{
-      display:flex;justify-content:space-between;border:1px solid #2b2023;border-radius:12px;
-      padding:10px 12px;background:#100d0e
-    }
+    .stat{display:flex;justify-content:space-between;border:1px solid #2b2023;border-radius:12px;padding:10px 12px;background:#100d0e}
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
     .spotify-slot iframe{height:152px;min-height:152px;background:transparent}
-    .nav-btn{
-      display:inline-flex;align-items:center;gap:8px;
-      background: var(--maroon-3); color:#fff; border:1px solid var(--maroon-3);
-      padding:10px 16px; border-radius:12px; font-weight:400; font-size:16px;
-    }
-    .nav-btn:hover{ filter: brightness(1.05) }
-    .cta{
-      display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;
-      border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700
-    }
+    .nav-btn{display:inline-flex;align-items:center;gap:8px;background:var(--maroon-3);color:#fff;border:1px solid var(--maroon-3);padding:10px 16px;border-radius:12px;font-weight:400;font-size:16px}
+    .nav-btn:hover{filter:brightness(1.05)}
+    .cta{display:block;margin:16px 0 4px;padding:14px 18px;border-radius:12px;border:1px solid #2b2023;background:#1a1416;color:#ffefe9;text-align:center;font-weight:700}
     .cta.green{background:var(--green);border-color:var(--green);color:#fff}
     .cta.green:hover{filter:brightness(1.05)}
     footer{border-top:1px solid #2b2023;color:var(--muted)}
@@ -143,16 +121,11 @@
     </div>
   </footer>
 
-  <!-- bump query so browsers fetch latest -->
-  <script src="/bands.js?v=embedRetry3"></script>
+  <script src="/bands.js?v=embedHardened1"></script>
   <script>
-    const APP_VERSION = "embed-retry-3";
-    console.log("[WMB] version:", APP_VERSION);
-
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
 
-    /* ---------- helpers ---------- */
     function byName(a,b){ return a.name.localeCompare(b.name); }
 
     function ytId(url){
@@ -169,7 +142,6 @@
       return null;
     }
 
-    // Parse any open.spotify.com track URL into {embed, href}
     function toSpotifyEmbedTrack(raw){
       if (!raw) return null;
       try{
@@ -179,10 +151,7 @@
         const idx = segs.indexOf('track');
         if (idx !== -1 && segs[idx+1]) {
           const id = segs[idx+1].split('?')[0];
-          return {
-            embed: `https://open.spotify.com/embed/track/${id}`,
-            href:  `https://open.spotify.com/track/${id}`
-          };
+          return { embed:`https://open.spotify.com/embed/track/${id}`, href:`https://open.spotify.com/track/${id}` };
         }
       }catch(e){}
       return null;
@@ -198,7 +167,6 @@
       }catch{return false;}
     }
 
-    /* ---------- manual stats & bios ---------- */
     function applyManualStats() {
       for (const b of BANDS) {
         if (!b.manualStats) continue;
@@ -206,89 +174,62 @@
         const m = b.manualStats;
         if (Number.isFinite(m.instagramFollowers)) STATS[b.name].instagramFollowers = Number(m.instagramFollowers);
         if (Number.isFinite(m.facebookFollowers)) STATS[b.name].facebookFollowers = Number(m.facebookFollowers);
-        const bioText = (typeof m.bio === "string" && m.bio.trim())
-          ? m.bio.trim()
-          : (typeof b.bio === "string" && b.bio.trim() ? b.bio.trim() : "");
+        const bioText = (typeof m.bio === "string" && m.bio.trim()) ? m.bio.trim() : (typeof b.bio === "string" && b.bio.trim() ? b.bio.trim() : "");
         if (bioText) STATS[b.name].bio = bioText;
       }
     }
 
-    /* ---------- Spotify embed: clean, with silent retries ---------- */
-    function mountSpotifyClean(slotEl, trackUrl){
-      slotEl.innerHTML = ""; // do not show proxy errors here
+    // Clean Spotify mount with silent retries, no proxy error leakage
+    function mountSpotify(slotEl, trackUrl){
+      slotEl.textContent = "";
       const parsed = toSpotifyEmbedTrack(trackUrl);
-      if (!parsed){
-        slotEl.textContent = "No track provided.";
-        return;
-      }
+      if (!parsed){ slotEl.textContent = "No track provided."; return; }
       const { embed, href } = parsed;
 
-      let tries = 0;
+      let tries = 0, loaded = false;
       const maxTries = 3;
 
-      const mountOnce = () => {
+      const attempt = () => {
         tries++;
-        // fresh iframe each attempt
-        const wrap = document.createElement("div");
         const ifr = document.createElement("iframe");
-        ifr.src = embed + "?utm_source=generator";
+        ifr.src = embed + "?utm_source=wmb";
         ifr.width = "100%";
         ifr.height = "152";
         ifr.loading = "lazy";
         ifr.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
         ifr.referrerPolicy = "no-referrer-when-downgrade";
-        wrap.appendChild(ifr);
+        ifr.addEventListener("load", () => { loaded = true; });
 
-        // Replace previous content with the new iframe only
-        slotEl.replaceChildren(wrap);
+        slotEl.replaceChildren(ifr);
 
-        let loaded = false;
-        const onLoaded = () => { loaded = true; };
-        ifr.addEventListener("load", onLoaded);
-
-        // Retry if it doesn't load in time
         setTimeout(() => {
-          if (!loaded && tries < maxTries) {
-            mountOnce(); // try again
-          } else if (!loaded && tries >= maxTries) {
-            // Keep the last iframe visible and add a tiny link below it
+          if (!loaded && tries < maxTries) attempt();
+          else if (!loaded){
             const link = document.createElement("div");
-            link.innerHTML = `<a href="${href}" target="_blank" rel="noopener"
-              style="display:inline-block;margin-top:8px;font-size:12px;color:#ffefe9;opacity:.8">
-              Open on Spotify
-            </a>`;
+            link.innerHTML = `<a href="${href}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:12px;color:#ffefe9;opacity:.85">Open on Spotify</a>`;
             slotEl.appendChild(link);
           }
-        }, 4000); // 4s per attempt
+        }, 4000);
       };
-
-      mountOnce();
+      attempt();
     }
 
     function patchBandCard(name){
       const data = STATS[name] || {};
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
       if (!card) return;
-
       const bio = card.querySelector("[data-slot=bio]");
       if (bio && data.bio) bio.textContent = data.bio;
-
       ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
         const el = card.querySelector(`[data-stat="${key}"]`);
         if (el) el.textContent = (data[key] || 0).toLocaleString();
       });
     }
 
-    function patchAllCardsFromStats(){
-      for (const b of BANDS) patchBandCard(b.name);
-    }
-
-    /* ---------- render ---------- */
     function renderSummary(){
       document.getElementById('totalCount').textContent = BANDS.length;
       const tb = document.getElementById('alphabetical');
-      tb.innerHTML = [...BANDS].sort(byName)
-        .map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
+      tb.innerHTML = [...BANDS].sort(byName).map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
     }
 
     function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
@@ -350,34 +291,27 @@
     function renderBands(){
       const wrap = document.getElementById('bands');
       wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
-
-      // Mount Spotify embeds immediately and independently of APIs
       document.querySelectorAll('[data-slot="spotify"]').forEach(el=>{
         const track = el.getAttribute('data-track') || '';
-        if (track) mountSpotifyClean(el, track);
+        if (track) mountSpotify(el, track);
         else el.textContent = 'No track provided.';
       });
     }
 
-    /* ---------- live data (does not affect embeds) ---------- */
     async function getJSON(u){
-      try{ const r = await fetch(u); return await r.json(); }
+      try{ const r = await fetch(u,{ credentials:'omit' }); return await r.json(); }
       catch{ return null; }
     }
 
     async function loadBandLive(b){
-      // Featured YouTube views
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
 
-      // Popularity from a true ARTIST url only
       const artistUrl =
-        (b.spotifyArtist && isSpotifyArtistUrl(b.spotifyArtist)) ? b.spotifyArtist :
-        (b.spotify && isSpotifyArtistUrl(b.spotify)) ? b.spotify :
+        (b.spotifyArtist && (()=>{try{const x=new URL(b.spotifyArtist);return x.hostname.includes("open.spotify.com")&&x.pathname.startsWith("/artist/")}catch{return false}})()) ? b.spotifyArtist :
+        (b.spotify && (()=>{try{const x=new URL(b.spotify);return x.hostname.includes("open.spotify.com")&&x.pathname.startsWith("/artist/")}catch{return false}})()) ? b.spotify :
         null;
 
-      const sp = artistUrl
-        ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(artistUrl)}&market=CY`)
-        : null;
+      const sp = artistUrl ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(artistUrl)}&market=CY`) : null;
 
       const prev = STATS[b.name] || {};
       STATS[b.name] = {
@@ -385,13 +319,7 @@
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
         spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0
       };
-
       patchBandCard(b.name);
-    }
-
-    async function loadAllLive(){
-      await Promise.all(BANDS.map(loadBandLive));
-      renderBoards();
     }
 
     function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
@@ -413,14 +341,9 @@
       });
     }
 
-    /* ---------- boot ---------- */
     document.getElementById('year').textContent = new Date().getFullYear();
-    renderSummary();
-    renderBands();
-    applyManualStats();
-    patchAllCardsFromStats();
-    renderBoards();
-    loadAllLive();
+    renderSummary(); renderBands(); applyManualStats(); renderBoards();
+    Promise.allSettled(BANDS.map(loadBandLive)).then(()=>renderBoards());
   </script>
 </body>
 </html>
