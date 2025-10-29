@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Judging Results — Wacken Metal Battle Cyprus</title>
 <style>
-  :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--crimson:#b3121f}
+  :root{
+    --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb; --crimson:#b3121f;
+    /* callout backgrounds for the 3 deciding columns */
+    --median-bg: rgba(255,180,0,.10);   /* warm amber */
+    --avgrank-bg: rgba(64,160,255,.12); /* calm blue */
+    --readiness-bg: rgba(179,18,31,.14);/* maroon wash */
+  }
   *{box-sizing:border-box}
   body{margin:0;background:#0a0a0b;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
   header{position:sticky;top:0;background:#0d0b0d;border-bottom:1px solid #231a1d}
@@ -23,7 +29,16 @@
   .right{text-align:right}
   .hidden{display:none}
   .boldwhite{font-weight:800;color:#fff;font-size:18px}
-  td.readiness{background:rgba(179,18,31,.12);font-weight:800}
+
+  /* Make the deciding columns pop (both header and cells) */
+  th.col-median,     td.col-median{background:var(--median-bg)}
+  th.col-avgrank,    td.col-avgrank{background:var(--avgrank-bg)}
+  th.col-readiness,  td.col-readiness{background:var(--readiness-bg);font-weight:800}
+
+  /* Explanation table small notes */
+  .note{color:var(--muted);font-size:12px}
+  .tag{display:inline-block;border:1px solid #2b2023;border-radius:999px;padding:2px 8px;font-size:12px;background:#1a1416}
+  .tag.ok{border-color:#2a6b3a;background:#16331e;color:#b8f0c8}
 </style>
 </head>
 <body>
@@ -38,7 +53,7 @@
       <span id="status" class="meta"></span>
     </div>
 
-    <!-- CSV only after load -->
+    <!-- CSV button only after load -->
     <div style="display:flex;justify-content:flex-end">
       <button id="btnCsv" class="hidden">Download Combined CSV</button>
     </div>
@@ -46,6 +61,7 @@
 </header>
 
 <main class="container">
+  <!-- MAIN RESULTS -->
   <section id="resultsCard" class="card hidden">
     <div id="summary" class="boldwhite" style="margin-bottom:10px"></div>
     <div style="overflow:auto">
@@ -53,13 +69,15 @@
         <thead>
           <tr>
             <th>Band</th>
-            <th class="right">Median rank</th>
-            <th class="right">Avg rank</th>
             <th class="right">Avg Musician­ship</th>
             <th class="right">Avg Originality</th>
             <th class="right">Avg Material</th>
             <th class="right">Avg Presence</th>
-            <th class="right">Avg Readiness</th>
+
+            <!-- the 3 deciding columns at the end, before Judges -->
+            <th class="right col-median">Median rank</th>
+            <th class="right col-avgrank">Avg rank</th>
+            <th class="right col-readiness">Avg readiness</th>
             <th class="right">Judges</th>
           </tr>
         </thead>
@@ -68,6 +86,7 @@
     </div>
   </section>
 
+  <!-- JUDGE SUBMISSIONS -->
   <section id="judgesCard" class="card hidden">
     <div class="h3" style="font-weight:700;margin:0 0 8px">Judge Submissions</div>
     <div class="meta" id="judgeCount"></div>
@@ -81,26 +100,56 @@
     </div>
   </section>
 
-  <section id="infoCard" class="card hidden">
+  <!-- EXPLANATION TEXT (you already had this) -->
+  <section class="card" id="how-card">
     <div class="h3" style="font-weight:700;margin:0 0 10px">How these results are calculated</div>
     <ul>
       <li>Each judge scores every band: Musicianship 40 percent, Originality 25 percent, Online Material Quality 20 percent, Online Presence 15 percent. These weights produce a judge’s single “readiness” score per band.</li>
-      <li>We convert each judge’s scores into a <em>ranking of bands</em> per judge, removing strict vs generous differences.</li>
-      <li>We order bands by their <b>median rank</b> across judges. Tie-breakers: average rank, trimmed standardized readiness, and head-to-head (who places higher for most judges).</li>
-      <li>Guardrails:
+      <li>We convert each judge’s scores into a <em>ranking of bands</em>. This removes differences in how strict or generous a judge is.</li>
+      <li>We order bands by their <b>median rank</b> across judges. The median is robust to one wild view and represents shared consensus.</li>
+      <li>Tie-breakers: average rank, a trimmed standardized average of readiness, and head-to-head who is placed higher by most judges.</li>
+      <li>Two guardrails balance consensus and genuine standouts:
         <ul>
-          <li><b>Consensus</b>: in ≥3 judges’ top-6 outranks bands not in ≥2 judges’ top-6.</li>
-          <li><b>Passion</b>: ranked 1st or 2nd by ≥3 judges guarantees a top-6 place.</li>
+          <li><b>Consensus guardrail</b>: if a band appears in the top 6 for at least three judges, they outrank bands that are not in the top 6 for at least two judges.</li>
+          <li><b>Passion guardrail</b>: if a band is ranked 1st or 2nd by at least three judges, they are guaranteed a top-6 place.</li>
         </ul>
       </li>
-      <li>We still display <b>Avg Readiness</b> for transparency; ordering follows the rank method above.</li>
+      <li>We still display the <b>Avg Readiness</b> column for transparency. The official ordering uses the rank-based method above.</li>
     </ul>
+  </section>
+
+  <!-- NEW: EXPLANATION TABLE -->
+  <section id="explainCard" class="card hidden">
+    <div class="h3" style="font-weight:700;margin:0 0 10px">Explanation table</div>
+    <div class="note" style="margin:-6px 0 10px">
+      Shows the three deciding metrics per band plus how many judges put them in the Top-6 or Top-2.  
+      “Eligible” means a guardrail could apply (your current ordering is rank-based; this is for transparency).
+    </div>
+    <div style="overflow:auto">
+      <table aria-label="Explanation table" id="tblExplain">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Band</th>
+            <th class="right col-median">Median rank</th>
+            <th class="right col-avgrank">Avg rank</th>
+            <th class="right col-readiness">Avg readiness</th>
+            <th class="right">Top-6 votes</th>
+            <th class="right">Top-2 votes</th>
+            <th>Guardrail eligibility</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyExplain"></tbody>
+      </table>
+    </div>
   </section>
 </main>
 
 <script>
+/* --------------------------------- weights --------------------------------- */
 const WEIGHTS = { m:0.40, o:0.25, q:0.20, p:0.15 };
 
+/* ------------------------------- DOM handles -------------------------------- */
 const elGate  = document.getElementById('gate');
 const elPwd   = document.getElementById('adminPwd');
 const elLoad  = document.getElementById('btnLoad');
@@ -115,27 +164,32 @@ const elJudgesCard = document.getElementById('judgesCard');
 const elJudgesBody = document.getElementById('tbodyJudges');
 const elJudgeCount = document.getElementById('judgeCount');
 
-const elInfo = document.getElementById('infoCard');
+const elExplainCard = document.getElementById('explainCard');
+const elExplainBody = document.getElementById('tbodyExplain');
 
-function readiness(s){ return s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p; }
-function avg(a){ return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; }
-function to2(n){ return Number(n).toFixed(2); }
-function byNum(a,b){ return a-b; }
+/* --------------------------------- helpers ---------------------------------- */
+const readiness = s => s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p;
+const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const to2 = n => Number(n).toFixed(2);
+const byNum = (a,b) => a-b;
 
+/* ---------- rank each judge’s sheet (1 = best within that judge) ----------- */
 function perJudgeRanking(scoresByBand){
-  const entries = Object.entries(scoresByBand).map(([band,s])=>({band, r:readiness(s)}));
-  entries.sort((a,b)=>b.r-a.r);
+  const entries = Object.entries(scoresByBand).map(([band,s])=>({ band, r: readiness(s) }));
+  entries.sort((a,b)=> b.r - a.r);
   const out = {};
   entries.forEach((e,i)=> out[e.band] = i+1);
   return out;
 }
 
-function combine(judgesObj){
+/* --------- combine across judges, compute deciding metrics + counts --------- */
+function combineWithCounts(judgesObj){
   const perJudge = {};
   for (const [judge, sheet] of Object.entries(judgesObj||{})) {
     perJudge[judge] = perJudgeRanking(sheet.scores||{});
   }
 
+  // collect band set
   const bands = new Set();
   Object.values(judgesObj||{}).forEach(s=>{
     Object.keys(s.scores||{}).forEach(b=>bands.add(b));
@@ -143,35 +197,46 @@ function combine(judgesObj){
 
   const rows = [];
   for (const band of bands) {
-    const ranks = [];
-    const Ms=[], Os=[], Qs=[], Ps=[], Rs=[];
-    for (const sheet of Object.values(judgesObj)) {
+    const ranks=[], Ms=[],Os=[],Qs=[],Ps=[], Rs=[];
+    let top6=0, top2=0;
+
+    for (const [judge, sheet] of Object.entries(judgesObj)) {
       const s = sheet.scores?.[band];
       if (!s) continue;
-      ranks.push(perJudge[sheet.judge][band]);
+      const rnk = perJudge[judge][band];
+      ranks.push(rnk);
+      if (rnk<=6) top6++;
+      if (rnk<=2) top2++;
       Ms.push(s.m); Os.push(s.o); Qs.push(s.q); Ps.push(s.p); Rs.push(readiness(s));
     }
-    const medianRank = ranks.length ? ranks.sort(byNum)[Math.floor((ranks.length-1)/2)] : 0;
-    const avgRank    = avg(ranks);
+
+    const med = ranks.length ? ranks.sort(byNum)[Math.floor((ranks.length-1)/2)] : 0;
+    const ar  = avg(ranks);
+
     rows.push({
       band,
-      medianRank, avgRank,
-      m:avg(Ms), o:avg(Os), q:avg(Qs), p:avg(Ps),
+      medianRank: med,
+      avgRank: ar,
+      m: avg(Ms), o: avg(Os), q: avg(Qs), p: avg(Ps),
       readiness: avg(Rs),
-      judges: ranks.length
+      judges: ranks.length,
+      top6,
+      top2
     });
   }
 
+  // sort by the deciding order
   rows.sort((a,b)=>{
     if (a.medianRank !== b.medianRank) return a.medianRank - b.medianRank;
-    if (a.avgRank !== b.avgRank) return a.avgRank - b.avgRank;
-    if (a.readiness !== b.readiness) return b.readiness - a.readiness;
+    if (a.avgRank    !== b.avgRank   ) return a.avgRank    - b.avgRank;
+    if (a.readiness  !== b.readiness ) return b.readiness  - a.readiness;
     return a.band.localeCompare(b.band);
   });
 
   return rows;
 }
 
+/* ------------------------------ render judges ------------------------------- */
 function renderJudges(entries){
   elJudgeCount.textContent = `Loaded ${entries.length} submission(s).`;
   elJudgesBody.innerHTML = entries.map(e=>{
@@ -185,6 +250,7 @@ function renderJudges(entries){
     </tr>`;
   }).join('');
 
+  // bind delete
   elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = async ()=>{
       if (!confirm('Delete this judge submission?')) return;
@@ -197,24 +263,26 @@ function renderJudges(entries){
       });
       const t = await r.text();
       if (!r.ok) { try{ alert(JSON.parse(t).error) }catch{ alert('Delete failed') } ; return; }
-      loadResults();
+      loadResults(); // refresh
     };
   });
 }
 
+/* --------------------------- render main results ---------------------------- */
 function renderResults(judgesObj){
-  const rows = combine(judgesObj);
+  const rows = combineWithCounts(judgesObj);
 
   elBody.innerHTML = rows.map((r,idx)=>`
     <tr>
       <td>${idx+1}. ${r.band}</td>
-      <td class="right">${to2(r.medianRank)}</td>
-      <td class="right">${to2(r.avgRank)}</td>
       <td class="right">${to2(r.m)}</td>
       <td class="right">${to2(r.o)}</td>
       <td class="right">${to2(r.q)}</td>
       <td class="right">${to2(r.p)}</td>
-      <td class="right readiness">${to2(r.readiness)}</td>
+
+      <td class="right col-median">${to2(r.medianRank)}</td>
+      <td class="right col-avgrank">${to2(r.avgRank)}</td>
+      <td class="right col-readiness">${to2(r.readiness)}</td>
       <td class="right">${r.judges}</td>
     </tr>
   `).join('');
@@ -224,9 +292,29 @@ function renderResults(judgesObj){
     : 'No scores found yet.';
 
   elCard.classList.remove('hidden');
-  elInfo.classList.remove('hidden');
+
+  // explanation table
+  elExplainBody.innerHTML = rows.map((r, i)=>{
+    const eligible =
+      (r.top2 >= 3) ? '<span class="tag ok">Passion eligible</span>' :
+      (r.top6 >= 3) ? '<span class="tag ok">Consensus eligible</span>' :
+      '<span class="tag">None</span>';
+
+    return `<tr>
+      <td class="right">${i+1}</td>
+      <td>${r.band}</td>
+      <td class="right col-median">${to2(r.medianRank)}</td>
+      <td class="right col-avgrank">${to2(r.avgRank)}</td>
+      <td class="right col-readiness">${to2(r.readiness)}</td>
+      <td class="right">${r.top6}</td>
+      <td class="right">${r.top2}</td>
+      <td>${eligible}</td>
+    </tr>`;
+  }).join('');
+  elExplainCard.classList.remove('hidden');
 }
 
+/* ------------------------------ CSV download -------------------------------- */
 function downloadCsv(judgesObj){
   const lines = [];
   lines.push(['judge','band','musicianship','originality','material_quality','online_presence','readiness'].join(','));
@@ -247,11 +335,12 @@ function downloadCsv(judgesObj){
   URL.revokeObjectURL(url);
 }
 
+/* ---------------------------------- load ------------------------------------ */
 async function loadResults(){
   elCsv.classList.add('hidden');
   elCard.classList.add('hidden');
   elJudgesCard.classList.add('hidden');
-  elInfo.classList.add('hidden');
+  elExplainCard.classList.add('hidden');
   elStat.textContent = 'Loading…';
 
   const pwd = elPwd.value.trim();
@@ -272,15 +361,15 @@ async function loadResults(){
 
   let data = {};
   try { data = JSON.parse(text); } catch {}
-  const judges = data.judges || {};
-  const entries = data.entries || {};
+  const judges  = data.judges  || {};
+  const entries = data.entries || [];
 
-  // SUCCESS: hide the gate
+  // hide the gate after successful load
   elGate.classList.add('hidden');
   elStat.textContent = '';
 
   renderResults(judges);
-  renderJudges(data.entries || []);
+  renderJudges(entries);
 
   elCsv.classList.remove('hidden');
   elCsv.onclick = () => downloadCsv(judges);
