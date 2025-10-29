@@ -1,30 +1,53 @@
 // bands.js
-// Public links plus manual IG/FB stats.
-// Keep this file at the ROOT of the repo, same level as index.html.
+// Public showcase list for Wacken Metal Battle Cyprus
+// Artist popularity pulled from Spotify Artist link
+// Track embed pulled from spotifyEmbedTrack
+// Manual bios and follower counts included
 
 window.BANDS = [
+  {
+    name: "Blynd",
+    genre: "Melodic Death Metal",
+    city: "Nicosia",
+    youtube: "https://www.youtube.com/watch?v=uVirgsDsaQ8&list=RDuVirgsDsaQ8&start_radio=1",
+    liveYoutube: "",
+    facebookUrl: "https://www.facebook.com/blyndmetal/",
+    spotify: "https://open.spotify.com/artist/5CgHUnYxF7RGMsD5BYY0lP",
+    spotifyEmbedTrack: "https://open.spotify.com/track/4ePdz39CP1zXYm3n7H5VKD?si=364037dbdb9b4696",
+    instagramUrl: "https://www.instagram.com/blyndmetal/",
+    fbPageId: "",
+    igUserId: "",
+    bio: "Blynd have built a solid reputation as one of Cyprus’ most respected metal acts, known for their powerful blend of melodic death metal and social consciousness. They have shared the stage with bands like Amon Amarth, Rotting Christ, and Septicflesh, and have represented Cyprus internationally at Wacken Open Air and other major festivals.",
+    manualStats: { facebookFollowers: 5900, instagramFollowers: 1346 }
+  },
   {
     name: "Black Strays",
     genre: "Hard Rock",
     city: "Limassol",
     youtube: "https://www.youtube.com/watch?v=P1BLK1hKqCM",
+    liveYoutube: "",
     facebookUrl: "",
     spotify: "https://open.spotify.com/artist/3wd5EEv0qSkYnzSOMBZDPA",
+    spotifyEmbedTrack: "https://open.spotify.com/track/6C31LplEoRKRnT0pO9nQJQ",
     instagramUrl: "https://www.instagram.com/blackstraysband/",
     fbPageId: "",
     igUserId: "",
+    bio: "Black Strays deliver high-energy hard rock with modern edge and strong melodies. Their sound blends raw attitude with refined musicianship, making them a standout in the Cyprus rock scene.",
     manualStats: { facebookFollowers: 0, instagramFollowers: 8522 }
   },
   {
     name: "Guiltera",
-    genre: "Metalcore 4. Wave",
+    genre: "Metalcore 4th Wave",
     city: "Limassol",
     youtube: "https://www.youtube.com/watch?v=gvQGIsr6oHc",
+    liveYoutube: "https://www.youtube.com/watch?v=Ue1x-H01cwc",
     facebookUrl: "https://www.facebook.com/profile.php?id=61559603642016",
     spotify: "https://open.spotify.com/artist/3Zn5DaI82ti9N0TLUd3LqQ",
+    spotifyEmbedTrack: "https://open.spotify.com/track/6e2D2pMAlzCZG0AfZhguqV",
     instagramUrl: "https://www.instagram.com/guiltera_band/",
     fbPageId: "",
     igUserId: "",
+    bio: "Guiltera push the boundaries of metalcore with intricate instrumentals, tight production, and emotionally charged performances. Their work fuses aggression with precision, reflecting the new wave of Cyprus metal talent.",
     manualStats: { facebookFollowers: 78, instagramFollowers: 3546 }
   },
   {
@@ -32,11 +55,14 @@ window.BANDS = [
     genre: "Dark Metal",
     city: "Limassol",
     youtube: "https://www.youtube.com/watch?v=ASzy9bWighQ",
+    liveYoutube: "https://www.youtube.com/watch?v=4f5xT0PpLqI",
     facebookUrl: "https://www.facebook.com/profile.php?id=61561403806389",
     spotify: "https://open.spotify.com/artist/4T0bImsYNQXp9JdY1RBzEu",
+    spotifyEmbedTrack: "https://open.spotify.com/track/0JmWo2xWJ8yAL2mtSTFqBW",
     instagramUrl: "https://www.instagram.com/kaaper_official/",
     fbPageId: "",
     igUserId: "",
+    bio: "Ka’aper channel darkness and atmosphere through ritualistic dark metal rooted in mythology and ancient mysticism. Their work is immersive, blending heaviness with mood and storytelling.",
     manualStats: { facebookFollowers: 236, instagramFollowers: 1616 }
   },
   {
@@ -44,23 +70,29 @@ window.BANDS = [
     genre: "Hard Rock",
     city: "Nicosia",
     youtube: "https://www.youtube.com/watch?v=Ocef41DXZOk",
+    liveYoutube: "",
     facebookUrl: "https://www.facebook.com/share/1HDsTp1voH/?mibextid=wwXIfr",
-    spotify: "https://youtube.com/@leavethewave?si=V7VJqZ_srN9cxGxw",
+    spotify: "https://open.spotify.com/artist/7ftPQLoFzTHVJfR8CU8fZ7",
+    spotifyEmbedTrack: "https://open.spotify.com/track/0t95PoEqdUzQSmv13K2POT",
     instagramUrl: "https://www.instagram.com/leavethewave/",
     fbPageId: "",
     igUserId: "",
+    bio: "Leave the Wave mix hard rock with alternative and progressive elements. Their songwriting is deeply melodic, shaped by emotion and driven by a tight, modern production style.",
     manualStats: { facebookFollowers: 398, instagramFollowers: 1126 }
   },
   {
-    name: "LIOMENO TOU",
+    name: "Liomeno Tou",
     genre: "Stoner Metal",
     city: "Nicosia",
     youtube: "",
+    liveYoutube: "",
     facebookUrl: "",
-    spotify: "https://open.spotify.com/track/0oQXAm5hYJnQE9J5UHWcUO",
-    instagramUrl: "https://www.instagram.com/liomeno.tou",
+    spotify: "https://open.spotify.com/artist/6Xrx1m4uVnN8PovdvI5jzC",
+    spotifyEmbedTrack: "https://open.spotify.com/track/0oQXAm5hYJnQE9J5UHWcUO",
+    instagramUrl: "https://www.instagram.com/liomeno.tou/",
     fbPageId: "",
     igUserId: "",
+    bio: "Liomeno Tou bring slow-burning stoner riffs infused with groove and grit. Their sound draws from heavy rock traditions while carrying a raw, Cypriot authenticity.",
     manualStats: { facebookFollowers: 0, instagramFollowers: 70 }
   },
   {
@@ -68,24 +100,29 @@ window.BANDS = [
     genre: "Progressive Metal",
     city: "Nicosia",
     youtube: "https://www.youtube.com/watch?v=auaVFa2oX7A",
+    liveYoutube: "https://www.youtube.com/watch?v=j2Z-RJX3p8M",
     facebookUrl: "https://www.facebook.com/share/17VciyNjMH/?mibextid=wwXIfr",
-    // Updated track URL for the embed, per your earlier request
-    spotify: "https://open.spotify.com/track/7vGxtIss267gSEckiSzNdp?si=1ea1a2ce02ec4e88",
+    spotify: "https://open.spotify.com/artist/4FbAc7bDc2HbqEk4sS8axr",
+    spotifyEmbedTrack: "https://open.spotify.com/track/7vGxtIss267gSEckiSzNdp",
     instagramUrl: "https://www.instagram.com/stephanosmarangos/",
     fbPageId: "",
     igUserId: "",
+    bio: "MARANG. explores the progressive edges of metal, combining cinematic atmospheres with technical precision. Their soundscapes are bold, expressive, and deeply personal, reflecting the artist’s experimental spirit.",
     manualStats: { facebookFollowers: 0, instagramFollowers: 2403 }
   },
   {
     name: "Salienzor",
-    genre: "Metalcore 3. Wave",
+    genre: "Metalcore 3rd Wave",
     city: "Nicosia",
     youtube: "https://www.youtube.com/watch?v=P-rovmbnWFY",
+    liveYoutube: "https://www.youtube.com/watch?v=5Y4v39-4e_8",
     facebookUrl: "https://www.facebook.com/profile.php?id=61552235609980",
     spotify: "https://open.spotify.com/artist/3z5HqSTma8Jo3riI30C8NI",
+    spotifyEmbedTrack: "https://open.spotify.com/track/0cT3qevuFvLqrfb9TzjpmR",
     instagramUrl: "https://www.instagram.com/salienzor/",
     fbPageId: "",
     igUserId: "",
+    bio: "Salienzor combine crushing breakdowns with melodic hooks, bringing an intense, high-energy performance that has earned them growing attention in the regional scene.",
     manualStats: { facebookFollowers: 18, instagramFollowers: 337 }
   },
   {
@@ -93,39 +130,29 @@ window.BANDS = [
     genre: "Groove Metal",
     city: "Larnaka",
     youtube: "https://www.youtube.com/watch?v=AQ7C-HvyDhY",
+    liveYoutube: "https://www.youtube.com/watch?v=FHyR5_G2jV4",
     facebookUrl: "",
     spotify: "https://open.spotify.com/artist/61Usxx24TwxGUlTUhE2S4u",
+    spotifyEmbedTrack: "https://open.spotify.com/track/2flM2C8BxoUjDZnWlZDTSC",
     instagramUrl: "https://www.instagram.com/speak.in.whispers/",
     fbPageId: "",
     igUserId: "",
-    manualStats: { facebookFollowers: 1300, instagramFollowers: 1091 },
-    // If you have a website for them, add: otherLinks: ["https://..."]
+    bio: "Speak In Whispers bring groove and aggression together in a modern hybrid of metalcore and thrash influences. Their dynamic sound and stage presence make them one of the most exciting new metal acts in Cyprus.",
+    manualStats: { facebookFollowers: 1300, instagramFollowers: 1091 }
   },
   {
     name: "YMNKY!",
     genre: "Alternative Metal",
     city: "Limassol",
     youtube: "https://music.youtube.com/watch?v=rEZiJ5eJZIs",
+    liveYoutube: "https://www.youtube.com/watch?v=IRtDEUPR5b8",
     facebookUrl: "https://www.facebook.com/ymnky.bnd",
     spotify: "https://open.spotify.com/artist/06EcVA3ORp4U1w2k29yVzG",
+    spotifyEmbedTrack: "https://open.spotify.com/track/2UZ7BAtjBT1gH0JwcEN3wA",
     instagramUrl: "https://www.instagram.com/ymnky_band/",
     fbPageId: "",
     igUserId: "",
+    bio: "YMNKY! blend melody, rap, and heavy metal elements in a style that’s both experimental and energetic. Their rule-breaking sound defies genre boundaries and keeps audiences hooked.",
     manualStats: { facebookFollowers: 249, instagramFollowers: 1746 }
-  },
-  {
-    name: "Blynd",
-    genre: "Melodic Death Metal",
-    city: "Nicosia",
-    youtube: "https://www.youtube.com/watch?v=uVirgsDsaQ8&list=RDuVirgsDsaQ8&start_radio=1",
-    facebookUrl: "https://www.facebook.com/blyndmetal/",
-    // Keep this as the ARTIST url for popularity
-    spotify: "https://open.spotify.com/artist/5CgHUnYxF7RGMsD5BYY0lP",
-    instagramUrl: "https://www.instagram.com/blyndmetal/",
-    fbPageId: "",
-    igUserId: "",
-    // Force the embedded player to this track only (popularity remains artist-based)
-    spotifyEmbedTrack: "https://open.spotify.com/track/4ePdz39CP1zXYm3n7H5VKD?si=364037dbdb9b4696",
-    manualStats: { facebookFollowers: 5900, instagramFollowers: 1346 }
   }
 ];
