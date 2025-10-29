@@ -8,41 +8,46 @@ function bad(msg, code = 400) {
   });
 }
 
+function pickKvCreds() {
+  // Try the "write" token first, then read-only, then legacy names.
+  const url =
+    (process.env.KV_REST_API_URL || '').trim() ||
+    (process.env.KV_URL || '').trim();
+  const token =
+    (process.env.KV_REST_API_TOKEN || '').trim() ||
+    (process.env.KV_REST_API_READ_ONLY_TOKEN || '').trim();
+
+  return { url, token };
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
-    const { password, prefix = 'wmb:scores:' } = await req.json() || {};
+
+    const body = await req.json();
+    const password = String(body?.password || '');
+    const prefix = String(body?.prefix || '');
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
-    const url = (process.env.KV_REST_API_URL || '').trim();
-    const token = (process.env.KV_REST_API_TOKEN || '').trim();
+
+    const { url, token } = pickKvCreds();
     if (!url || !token) return bad('KV not configured', 500);
 
-    const out = [];
-    let cursor = '0';
-    const match = encodeURIComponent(`${prefix}*`);
-    const count = 200;
+    const scanUrl = `${url}/scan/0?match=${encodeURIComponent(prefix ? `${prefix}*` : '*')}&count=200`;
+    const res = await fetch(scanUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return bad(await res.text() || 'SCAN failed', 500);
 
-    do {
-      const res = await fetch(`${url}/scan/${cursor}?match=${match}&count=${count}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      let next = '0';
-      let keys = [];
-      if (Array.isArray(data) && data.length >= 2) {
-        next = String(data[0] ?? '0');
-        keys = Array.isArray(data[1]) ? data[1] : [];
-      } else {
-        next = String(data.cursor ?? data.next_cursor ?? '0');
-        keys = data.keys || data.results || data.result || [];
-      }
-      out.push(...keys);
-      cursor = next;
-    } while (cursor !== '0');
+    const data = await res.json();
+    // Normalize response shapes
+    let keys = [];
+    if (Array.isArray(data) && data.length >= 2) {
+      keys = Array.isArray(data[1]) ? data[1] : [];
+    } else {
+      keys = data.keys || data.results || data.result || [];
+    }
 
-    return new Response(JSON.stringify({ ok: true, keys: out }), {
+    return new Response(JSON.stringify({ ok: true, keys }), {
       status: 200, headers: { 'content-type': 'application/json' }
     });
   } catch (e) {
