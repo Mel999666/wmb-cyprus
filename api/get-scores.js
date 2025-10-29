@@ -1,3 +1,4 @@
+// /api/get-scores.js
 export const config = { runtime: 'edge' };
 
 function bad(msg, code = 400) {
@@ -12,53 +13,62 @@ export default async function handler(req) {
     if (req.method !== 'POST') return bad('Use POST', 405);
 
     const body = await req.json();
-    const pw = String(body?.password || '');
+    const password = String(body?.password || '');
+    const ok = !!(process.env.RESULTS_PASSWORD) && password === process.env.RESULTS_PASSWORD;
+    if (!ok) return bad('Unauthorized', 401);
 
-    const resultsPw = (process.env.RESULTS_PASSWORD || '').trim();
-    const adminPw   = (process.env.ADMIN_PASSWORD   || '').trim();
-
-    const matchResults = !!resultsPw && pw === resultsPw;
-    const matchAdmin   = !!adminPw   && pw === adminPw;
-
-    if (!matchResults && !matchAdmin) {
-      return bad(`Unauthorized`, 401);
-    }
-
-    const url   = (process.env.KV_REST_API_URL   || '').trim();
+    const url = (process.env.KV_REST_API_URL || '').trim();
     const token = (process.env.KV_REST_API_TOKEN || '').trim();
     if (!url || !token) return bad('KV not configured', 500);
 
-    // list keys
-    const keysRes = await fetch(`${url}/keys/${encodeURIComponent('wmb:scores:*')}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const prefix = 'wmb:scores:';
+    // List keys
+    const listRes = await fetch(`${url}/list/${encodeURIComponent(prefix)}`, {
+      headers: { Authorization: `Bearer ${token}` }
     });
-    const keysJson = await keysRes.json();
-    const keys = Array.isArray(keysJson.result) ? keysJson.result : [];
+    if (!listRes.ok) {
+      const t = await listRes.text();
+      return bad(`KV list failed: ${t || listRes.status}`, 500);
+    }
+    const listData = await listRes.json();
+    const keys = Array.isArray(listData?.result) ? listData.result : [];
 
-    // read each key
-    const out = {};
-    for (const k of keys) {
-      const g = await fetch(`${url}/get/${encodeURIComponent(k)}`, {
-        headers: { Authorization: `Bearer ${token}` },
+    // Fetch each value
+    const entries = [];
+    for (const key of keys) {
+      const getRes = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      const gj = await g.json();
-      if (gj?.result) {
-        try {
-          const val = JSON.parse(gj.result);
-          const jname = (val?.judge || '').trim();
-          const jkey  = (val?.judgekey || '').trim();
-          if (jname && val?.scores) {
-            out[jkey || jname] = val; // prefer normalized key
-          }
-        } catch {}
-      }
+      if (!getRes.ok) continue;
+      const g = await getRes.json();
+      if (!g?.result) continue;
+      try {
+        const obj = JSON.parse(decodeURIComponent(g.result));
+        // expect { judge, judgekey, scores, ts }
+        entries.push({
+          judge: obj.judge || '',
+          judgekey: obj.judgekey || key.replace(prefix,''),
+          scores: obj.scores || {},
+          ts: Number(obj.ts) || 0
+        });
+      } catch {}
     }
 
-    return new Response(JSON.stringify({ judges: out }), {
+    // Build judges object the frontend already expects
+    const judges = {};
+    for (const e of entries) {
+      judges[e.judge || e.judgekey] = {
+        judge: e.judge || e.judgekey,
+        when: e.ts || 0,
+        scores: e.scores || {}
+      };
+    }
+
+    return new Response(JSON.stringify({ ok:true, count: entries.length, entries, judges }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json' }
     });
-  } catch {
+  } catch (e) {
     return bad('Server error', 500);
   }
 }
