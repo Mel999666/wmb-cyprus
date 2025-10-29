@@ -30,13 +30,17 @@
 <header>
   <div class="container">
     <h2 style="margin:0 0 8px">Judging Results — Wacken Metal Battle Cyprus</h2>
+
+    <!-- PASSWORD GATE -->
     <div id="gate" class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <input id="adminPwd" type="password" autocomplete="current-password" placeholder="Admin / results password" />
       <button id="btnLoad" class="primary">Load results</button>
       <span id="status" class="meta"></span>
     </div>
-    <div id="csvWrap" class="hidden" style="display:flex;justify-content:flex-end">
-      <button id="btnCsv">Download Combined CSV</button>
+
+    <!-- CSV only after load -->
+    <div style="display:flex;justify-content:flex-end">
+      <button id="btnCsv" class="hidden">Download Combined CSV</button>
     </div>
   </div>
 </header>
@@ -51,7 +55,7 @@
             <th>Band</th>
             <th class="right">Median rank</th>
             <th class="right">Avg rank</th>
-            <th class="right">Avg Musicianship</th>
+            <th class="right">Avg Musician­ship</th>
             <th class="right">Avg Originality</th>
             <th class="right">Avg Material</th>
             <th class="right">Avg Presence</th>
@@ -77,20 +81,19 @@
     </div>
   </section>
 
-  <section id="explainCard" class="card hidden">
+  <section id="infoCard" class="card hidden">
     <div class="h3" style="font-weight:700;margin:0 0 10px">How these results are calculated</div>
     <ul>
       <li>Each judge scores every band: Musicianship 40 percent, Originality 25 percent, Online Material Quality 20 percent, Online Presence 15 percent. These weights produce a judge’s single “readiness” score per band.</li>
-      <li>We convert each judge’s scores into a <em>ranking of bands</em>. This removes differences in how strict or generous a judge is.</li>
-      <li>We order bands by their <b>median rank</b> across judges. The median is robust to one wild view and represents shared consensus.</li>
-      <li>Tie-breakers: average rank, a trimmed standardized average of readiness, and head-to-head who is placed higher by most judges.</li>
-      <li>Two guardrails balance consensus and genuine standouts:
+      <li>We convert each judge’s scores into a <em>ranking of bands</em> per judge, removing strict vs generous differences.</li>
+      <li>We order bands by their <b>median rank</b> across judges. Tie-breakers: average rank, trimmed standardized readiness, and head-to-head (who places higher for most judges).</li>
+      <li>Guardrails:
         <ul>
-          <li><b>Consensus guardrail</b>: if a band appears in the top 6 for at least three judges, they outrank bands that are not in the top 6 for at least two judges.</li>
-          <li><b>Passion guardrail</b>: if a band is ranked 1st or 2nd by at least three judges, they are guaranteed a top-6 place.</li>
+          <li><b>Consensus</b>: in ≥3 judges’ top-6 outranks bands not in ≥2 judges’ top-6.</li>
+          <li><b>Passion</b>: ranked 1st or 2nd by ≥3 judges guarantees a top-6 place.</li>
         </ul>
       </li>
-      <li>We still display the <b>Avg Readiness</b> column for transparency. The official ordering uses the rank-based method above.</li>
+      <li>We still display <b>Avg Readiness</b> for transparency; ordering follows the rank method above.</li>
     </ul>
   </section>
 </main>
@@ -102,7 +105,6 @@ const elGate  = document.getElementById('gate');
 const elPwd   = document.getElementById('adminPwd');
 const elLoad  = document.getElementById('btnLoad');
 const elCsv   = document.getElementById('btnCsv');
-const elCsvWrap = document.getElementById('csvWrap');
 const elStat  = document.getElementById('status');
 
 const elCard  = document.getElementById('resultsCard');
@@ -113,7 +115,7 @@ const elJudgesCard = document.getElementById('judgesCard');
 const elJudgesBody = document.getElementById('tbodyJudges');
 const elJudgeCount = document.getElementById('judgeCount');
 
-const elExplain = document.getElementById('explainCard');
+const elInfo = document.getElementById('infoCard');
 
 function readiness(s){ return s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p; }
 function avg(a){ return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; }
@@ -182,6 +184,7 @@ function renderJudges(entries){
       <td><button data-del="${e.judgekey}">Delete</button></td>
     </tr>`;
   }).join('');
+
   elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = async ()=>{
       if (!confirm('Delete this judge submission?')) return;
@@ -221,6 +224,7 @@ function renderResults(judgesObj){
     : 'No scores found yet.';
 
   elCard.classList.remove('hidden');
+  elInfo.classList.remove('hidden');
 }
 
 function downloadCsv(judgesObj){
@@ -244,10 +248,10 @@ function downloadCsv(judgesObj){
 }
 
 async function loadResults(){
-  elCsvWrap.classList.add('hidden');
+  elCsv.classList.add('hidden');
   elCard.classList.add('hidden');
   elJudgesCard.classList.add('hidden');
-  elExplain.classList.add('hidden');
+  elInfo.classList.add('hidden');
   elStat.textContent = 'Loading…';
 
   const pwd = elPwd.value.trim();
@@ -268,24 +272,22 @@ async function loadResults(){
 
   let data = {};
   try { data = JSON.parse(text); } catch {}
-
-  // Success: hide gate and show the rest of the page
-  elGate.classList.add('hidden');
-  elStat.textContent = '';
-
   const judges = data.judges || {};
   const entries = data.entries || {};
 
-  renderResults(judges);
-  renderJudges(entries);
+  // SUCCESS: hide the gate
+  elGate.classList.add('hidden');
+  elStat.textContent = '';
 
-  elCsvWrap.classList.remove('hidden');
+  renderResults(judges);
+  renderJudges(data.entries || []);
+
+  elCsv.classList.remove('hidden');
   elCsv.onclick = () => downloadCsv(judges);
   elJudgesCard.classList.remove('hidden');
-  elExplain.classList.remove('hidden');
 }
 
-elLoad.addEventListener('click', loadResults);
+document.getElementById('btnLoad').addEventListener('click', loadResults);
 </script>
 </body>
 </html>
