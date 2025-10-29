@@ -1,4 +1,6 @@
+// /api/submit-score.js
 export const config = { runtime: 'edge' };
+import { chooseKvCreds } from './_kv-helpers.js';
 
 function okJudgePass(pw) {
   const judge = (process.env.JUDGE_PASSWORD || '').trim();
@@ -12,7 +14,7 @@ function bad(msg, code = 400) {
   });
 }
 
-// Normalize: lowercase, trim, collapse spaces, strip non-letters/numbers/spaces
+// Normalize judge name -> stable key
 function normalizeJudge(s) {
   return String(s || '')
     .toLowerCase()
@@ -37,9 +39,8 @@ export default async function handler(req) {
     const judgekey = normalizeJudge(judgeRaw);
     if (!judgekey) return bad('Invalid judge name');
 
-    // Upstash REST
-    const url = (process.env.KV_REST_API_URL || '').trim();
-    const token = (process.env.KV_REST_API_TOKEN || '').trim();
+    // Use the same Upstash creds as get-scores (write pair preferred)
+    const { url, token } = chooseKvCreds('write');
     if (!url || !token) return bad('KV not configured', 500);
 
     const key = `wmb:scores:${judgekey}`;
@@ -50,13 +51,17 @@ export default async function handler(req) {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
+
     const data = await r.json();
-    if (!r.ok || data?.error) return bad(data?.error || 'KV write failed', 500);
+    if (!r.ok || data?.error) {
+      return bad(data?.error || 'KV write failed', 500);
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { 'content-type': 'application/json' }
+      status: 200,
+      headers: { 'content-type': 'application/json' },
     });
-  } catch {
+  } catch (e) {
     return bad('Server error', 500);
   }
 }
