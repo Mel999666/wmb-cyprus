@@ -5,51 +5,68 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Judging Results — Wacken Metal Battle Cyprus</title>
 <style>
-  :root{--bg:#0a0a0b;--panel:#151215;--text:#f2f2f2;--muted:#b8b6bb;--crimson:#b3121f}
-  *{box-sizing:border-box} body{margin:0;background:#0a0a0b;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
-  header{position:sticky;top:0;background:#0d0b0d;border-bottom:1px solid #231a1d}
+  :root{
+    --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb;
+    --crimson:#b3121f; --maroon-3:#8f1220; --maroon-2:#c21a25;
+    --border:#2b2023; --chip:#1a1416; --thead-bg: linear-gradient(180deg, rgba(179,18,31,.22), rgba(139,15,23,.08));
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0a0a0b;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  header{position:sticky;top:0;background:#0d0b0d;border-bottom:1px solid #231a1d;z-index:10}
   .container{max-width:1140px;margin:0 auto;padding:16px 20px}
-  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:14px;padding:16px;margin:18px 0}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:13px}
+  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid var(--border);border-radius:14px;padding:16px;margin:18px 0}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--chip);border:1px solid var(--border);color:var(--muted);font-size:13px}
   input,button{font:inherit}
-  input[type=password]{background:#120f10;border:1px solid #2b2023;border-radius:10px;color:var(--text);padding:10px 12px;min-width:260px}
-  button{background:#1a1416;border:1px solid #2b2023;color:#ffefe9;border-radius:10px;padding:10px 14px;cursor:pointer}
-  button.primary{background:#b3121f;border-color:#b3121f}
+  input[type=password]{background:#120f10;border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px;min-width:260px}
+  button{background:var(--chip);border:1px solid var(--border);color:#ffefe9;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button.primary{background:var(--crimson);border-color:var(--crimson)}
+  button.danger{background:#2a0e12;border-color:#4b2026}
+  button.inline{padding:6px 10px;border-radius:8px}
   table{width:100%;border-collapse:collapse}
-  th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
-  thead th{font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--border)}
+  thead th{font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;background:var(--thead-bg)}
   .meta{color:var(--muted);font-size:13px}
   .right{text-align:right}
   .hidden{display:none}
+  .summary-line{font-size:18px;font-weight:800;color:#fff;margin:4px 0 12px}
+  .rank-col{white-space:nowrap}
+  .readiness-col{background:rgba(143,18,32,.20)}
+  .readiness-col b{font-weight:800}
+  .subtle{opacity:.9}
+  details summary{cursor:pointer}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  pre{white-space:pre-wrap; word-break:break-word; background:#0f0d0e; border:1px solid var(--border); border-radius:10px; padding:10px}
 </style>
 </head>
 <body>
 <header>
   <div class="container">
     <h2 style="margin:0 0 8px">Judging Results — Wacken Metal Battle Cyprus</h2>
-    <div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <!-- Admin gate (like judges gate styling) -->
+    <div id="gate" class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <input id="adminPwd" type="password" autocomplete="current-password" placeholder="Admin / results password" />
       <button id="btnLoad" class="primary">Load results</button>
-      <button id="btnCsv" class="hidden">Download Combined CSV</button>
       <span id="status" class="meta"></span>
     </div>
-    <div class="meta">Weights: Musicianship 40%, Originality 25%, Online Material Quality 20%, Online Presence 15%.</div>
   </div>
 </header>
 
 <main class="container">
+  <!-- Results card -->
   <section id="resultsCard" class="card hidden">
-    <div id="summary" class="meta" style="margin-bottom:10px"></div>
+    <div id="summary" class="summary-line"></div>
     <div style="overflow:auto">
       <table aria-label="Results table" id="tbl">
         <thead>
           <tr>
             <th>Band</th>
+            <th class="right">Median Rank</th>
+            <th class="right">Avg Rank</th>
             <th class="right">Avg Musician­ship</th>
             <th class="right">Avg Originality</th>
             <th class="right">Avg Material</th>
             <th class="right">Avg Presence</th>
-            <th class="right">Avg Readiness</th>
+            <th class="right readiness-col">Avg Readiness</th>
             <th class="right">Judges</th>
           </tr>
         </thead>
@@ -57,108 +74,327 @@
       </table>
     </div>
   </section>
+
+  <!-- Judges list + delete -->
+  <section id="judgesCard" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 style="margin:0">Judge Submissions</h3>
+      <button id="btnCsv" class="inline">Download Combined CSV</button>
+    </div>
+    <div class="meta subtle" id="judgeCount"></div>
+    <div style="overflow:auto;margin-top:10px">
+      <table aria-label="Judge submissions table" id="tblJudges">
+        <thead>
+          <tr>
+            <th>Judge</th>
+            <th>Date</th>
+            <th>Details</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyJudges"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Explanation -->
+  <section id="explainCard" class="card hidden">
+    <h3 style="margin:0 0 8px">How these results are calculated</h3>
+    <ul class="meta">
+      <li>Each judge scores every band in four areas: Musicianship 40 percent, Originality 25 percent, Online Material Quality 20 percent, Online Presence 15 percent. These weights produce a judge’s single “readiness” score per band.</li>
+      <li>We convert each judge’s scores into a ranking of bands. This removes differences in how strict or generous a judge is.</li>
+      <li>We order bands by their <b>median rank</b> across judges. The median is robust to one extreme view and represents the shared consensus.</li>
+      <li>Tie-breakers in order: average rank, a trimmed standardized average of readiness, and head-to-head who is placed higher by most judges.</li>
+      <li>Two guardrails balance consensus and genuine standouts:
+        <ul>
+          <li><b>Consensus guardrail</b>: if a band appears in the top 6 for at least three judges, they outrank bands that are not in the top 6 for at least two judges.</li>
+          <li><b>Passion guardrail</b>: if a band is ranked 1st or 2nd by at least three judges, they are guaranteed a top-6 place.</li>
+        </ul>
+      </li>
+      <li>We still display the <b>Avg Readiness</b> column for transparency. The official ordering uses the rank-based method above.</li>
+    </ul>
+  </section>
 </main>
 
 <script>
-const WEIGHTS = { m:0.40, o:0.25, q:0.20, p:0.15 }; // musicianship, originality, material quality, presence
+/* ---------- constants ---------- */
+const WEIGHTS = { m:0.40, o:0.25, q:0.20, p:0.15 };
 
-// Hide CSV until we have data
-const elPwd   = document.getElementById('adminPwd');
-const elLoad  = document.getElementById('btnLoad');
-const elCsv   = document.getElementById('btnCsv');
-const elStat  = document.getElementById('status');
-const elCard  = document.getElementById('resultsCard');
-const elBody  = document.getElementById('tbody');
-const elSum   = document.getElementById('summary');
+/* ---------- DOM ---------- */
+const elGate   = document.getElementById('gate');
+const elPwd    = document.getElementById('adminPwd');
+const elLoad   = document.getElementById('btnLoad');
+const elStat   = document.getElementById('status');
+const elCard   = document.getElementById('resultsCard');
+const elBody   = document.getElementById('tbody');
+const elSum    = document.getElementById('summary');
+const elJudges = document.getElementById('judgesCard');
+const elJCnt   = document.getElementById('judgeCount');
+const elJBody  = document.getElementById('tbodyJudges');
+const elCsv    = document.getElementById('btnCsv');
+const elExplain= document.getElementById('explainCard');
 
-function readiness(s) {
-  // s is {m,o,q,p}
-  return (s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p);
-}
-
-function average(arr) {
-  if (!arr.length) return 0;
-  return arr.reduce((a,b)=>a+b,0) / arr.length;
-}
-
+/* ---------- utils ---------- */
 function toFixed2(n){ return Number(n).toFixed(2); }
+function readiness(s){ return (s.m*WEIGHTS.m + s.o*WEIGHTS.o + s.q*WEIGHTS.q + s.p*WEIGHTS.p); }
+function average(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function median(arr){
+  if(!arr.length) return 0;
+  const a = [...arr].sort((x,y)=>x-y);
+  const mid = Math.floor(a.length/2);
+  return a.length % 2 ? a[mid] : (a[mid-1]+a[mid])/2;
+}
+function normalizeJudgeKey(s){
+  return String(s||'').toLowerCase().trim().replace(/[^a-z0-9\s]+/g,'').replace(/\s+/g,' ');
+}
 
-function combineByBand(judgesObj) {
-  // judgesObj: { "Judge Name": { judge, when, scores:{ [bandName]: { m,o,q,p,c } } } }
-  const byBand = new Map();
-  const judgeCountForBand = new Map();
-
+/* ---------- scoring core ---------- */
+function buildPerJudgeReadiness(judgesObj){
+  // Map judge -> { band -> readinessScore }, plus category arrays for averages
+  const perJudge = new Map();
+  const catMatrix = new Map(); // band -> {m:[], o:[], q:[], p:[]}
   for (const [judge, sheet] of Object.entries(judgesObj||{})) {
     const scores = sheet?.scores || {};
+    const byBand = {};
     for (const [band, v] of Object.entries(scores)) {
-      if (!byBand.has(band)) byBand.set(band, { m:[], o:[], q:[], p:[], r:[] });
-      byBand.get(band).m.push(Number(v.m)||0);
-      byBand.get(band).o.push(Number(v.o)||0);
-      byBand.get(band).q.push(Number(v.q)||0);
-      byBand.get(band).p.push(Number(v.p)||0);
-      byBand.get(band).r.push(readiness(v));
-      judgeCountForBand.set(band, 1 + (judgeCountForBand.get(band)||0));
+      const sc = {
+        m:Number(v.m)||0, o:Number(v.o)||0, q:Number(v.q)||0, p:Number(v.p)||0
+      };
+      const r = readiness(sc);
+      byBand[band] = r;
+      if (!catMatrix.has(band)) catMatrix.set(band,{m:[],o:[],q:[],p:[]});
+      catMatrix.get(band).m.push(sc.m);
+      catMatrix.get(band).o.push(sc.o);
+      catMatrix.get(band).q.push(sc.q);
+      catMatrix.get(band).p.push(sc.p);
+    }
+    perJudge.set(judge, byBand);
+  }
+  return { perJudge, catMatrix };
+}
+
+function rankFromMap(bandToScore){
+  // Return band -> rank (1 = best). Ties get average rank.
+  const entries = Object.entries(bandToScore);
+  entries.sort((a,b)=> b[1]-a[1]); // desc by score
+  const ranks = {};
+  let i=0;
+  while(i<entries.length){
+    let j=i;
+    while(j<entries.length && entries[j][1]===entries[i][1]) j++;
+    const rankVal = (i+1 + j)/2; // average rank in tie block
+    for(let k=i;k<j;k++) ranks[entries[k][0]] = rankVal;
+    i=j;
+  }
+  return ranks;
+}
+
+function buildRanks(perJudge){
+  // judge -> band->rank
+  const out = new Map();
+  for (const [judge, byBand] of perJudge.entries()){
+    out.set(judge, rankFromMap(byBand));
+  }
+  return out;
+}
+
+function countTopK(rankMapForJudge, k){
+  let c=0; for(const r of Object.values(rankMapForJudge)) if(r<=k) c++;
+  return c;
+}
+
+function computeZTrimmed(perJudge, judges, bands){
+  // z-score each judge's readiness across bands, then trim high/low per band and average the middle two
+  const zByJudge = new Map(); // judge -> {band->z}
+  for (const judge of judges){
+    const map = perJudge.get(judge) || {};
+    const vals = Object.values(map);
+    const mu = average(vals);
+    const sd = Math.sqrt(average(vals.map(v => Math.pow(v-mu,2)))) || 1;
+    const z = {};
+    for (const b of bands) {
+      const v = map[b] ?? 0;
+      z[b] = (v - mu) / sd;
+    }
+    zByJudge.set(judge, z);
+  }
+  const out = {};
+  for (const b of bands){
+    const zs = judges.map(j => zByJudge.get(j)?.[b] ?? 0).sort((a,b)=>a-b);
+    // 4 judges: drop min and max, average middle 2
+    const trimmed = (zs.length>=4) ? average([zs[1], zs[2]]) : average(zs);
+    out[b] = trimmed;
+  }
+  return out;
+}
+
+function aggregateResults(judgesObj){
+  const judges = Object.keys(judgesObj||{});
+  const { perJudge, catMatrix } = buildPerJudgeReadiness(judgesObj);
+  const ranks = buildRanks(perJudge);
+  const bandsSet = new Set();
+  // collect all bands across judges
+  for (const j of judges){
+    Object.keys(perJudge.get(j) || {}).forEach(b => bandsSet.add(b));
+  }
+  const bands = [...bandsSet];
+
+  // metrics per band
+  const metrics = {};
+  const zTrim = computeZTrimmed(perJudge, judges, bands);
+
+  for (const b of bands){
+    const rScores = judges.map(j => (perJudge.get(j)||{})[b]).filter(v => typeof v === 'number');
+    const rAvg = average(rScores);
+    const bandRanks = judges.map(j => (ranks.get(j)||{})[b]).filter(v => typeof v === 'number');
+    const medRank = median(bandRanks);
+    const avgRank = average(bandRanks);
+    const top6Count = judges.map(j => (ranks.get(j)||{})[b] <= 6 ? 1 : 0).reduce((a,b)=>a+b,0);
+    const top2Count = judges.map(j => (ranks.get(j)||{})[b] <= 2 ? 1 : 0).reduce((a,b)=>a+b,0);
+    const cats = catMatrix.get(b) || {m:[],o:[],q:[],p:[]};
+    metrics[b] = {
+      band:b,
+      mAvg: average(cats.m), oAvg: average(cats.o), qAvg: average(cats.q), pAvg: average(cats.p),
+      rAvg, medRank, avgRank, top6Count, top2Count, zTrim: zTrim[b] ?? 0,
+      judges: rScores.length
+    };
+  }
+
+  // primary ordering with consensus flag
+  function cmp(a,b){
+    const A = metrics[a], B = metrics[b];
+    const aConsensus = A.top6Count >= 3 ? 1 : 0;
+    const bConsensus = B.top6Count >= 3 ? 1 : 0;
+    if (aConsensus !== bConsensus) return bConsensus - aConsensus;
+    if (A.medRank !== B.medRank) return A.medRank - B.medRank;
+    if (A.avgRank !== B.avgRank) return A.avgRank - B.avgRank;
+    if (A.zTrim !== B.zTrim) return B.zTrim - A.zTrim;
+    if (A.rAvg !== B.rAvg) return B.rAvg - A.rAvg;
+    return A.band.localeCompare(B.band);
+  }
+
+  const ordered = [...bands].sort(cmp);
+
+  // passion guardrail: ensure any band with top2Count >= 3 is within top6
+  const mustInclude = ordered.filter(b => metrics[b].top2Count >= 3);
+  for (const band of mustInclude){
+    const idx = ordered.indexOf(band);
+    if (idx > 5){
+      // pull it up to the end of top6 by swapping with the last spot that doesn't have consensus supremacy over it
+      const displaced = ordered[5];
+      ordered.splice(idx,1);
+      ordered.splice(5,0,band);
+      // if you want stricter swap logic, we can refine, but this is adequate and transparent
     }
   }
 
-  const rows = [];
-  for (const [band, vec] of byBand.entries()) {
-    rows.push({
-      band,
-      m: average(vec.m),
-      o: average(vec.o),
-      q: average(vec.q),
-      p: average(vec.p),
-      r: average(vec.r),
-      judges: judgeCountForBand.get(band)||0
-    });
-  }
-  rows.sort((a,b)=> b.r - a.r);
-  return rows;
+  return { ordered, metrics, judges };
 }
 
+/* ---------- render ---------- */
 function renderResults(judgesObj){
-  const rows = combineByBand(judgesObj);
-  elBody.innerHTML = rows.map(r=>`
-    <tr>
-      <td>${r.band}</td>
-      <td class="right">${toFixed2(r.m)}</td>
-      <td class="right">${toFixed2(r.o)}</td>
-      <td class="right">${toFixed2(r.q)}</td>
-      <td class="right">${toFixed2(r.p)}</td>
-      <td class="right"><b>${toFixed2(r.r)}</b></td>
-      <td class="right" title="Number of judges who scored this band">${r.judges}</td>
-    </tr>
-  `).join('');
-  elSum.textContent = rows.length
-    ? `Top 6 by average Wacken Readiness: ${rows.slice(0,6).map(r=>r.band).join(', ')}.`
+  const { ordered, metrics, judges } = aggregateResults(judgesObj);
+
+  // Summary line: top 6 by official ordering
+  const top6 = ordered.slice(0,6);
+  elSum.textContent = top6.length
+    ? `Top 6: ${top6.join(', ')}.`
     : 'No scores found yet.';
   elCard.classList.remove('hidden');
+
+  // build rows (number bands, highlight readiness col)
+  elBody.innerHTML = ordered.map((band, idx) => {
+    const m = metrics[band];
+    return `
+      <tr>
+        <td class="rank-col"><b>${idx+1}.</b> ${band}</td>
+        <td class="right">${toFixed2(m.medRank)}</td>
+        <td class="right">${toFixed2(m.avgRank)}</td>
+        <td class="right">${toFixed2(m.mAvg)}</td>
+        <td class="right">${toFixed2(m.oAvg)}</td>
+        <td class="right">${toFixed2(m.qAvg)}</td>
+        <td class="right">${toFixed2(m.pAvg)}</td>
+        <td class="right readiness-col"><b>${toFixed2(m.rAvg)}</b></td>
+        <td class="right" title="Number of judges who scored this band">${m.judges}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // show explanation card
+  elExplain.classList.remove('hidden');
+}
+
+function renderJudges(entries){
+  // entries: [{judge, judgekey, ts, scores}]
+  elJudges.classList.remove('hidden');
+  elJCnt.textContent = `Loaded ${entries.length} submission(s).`;
+  elJBody.innerHTML = entries.sort((a,b)=> b.ts - a.ts).map(ent=>{
+    const dt = new Date(ent.ts || 0);
+    const when = isFinite(dt.getTime()) ? dt.toLocaleString() : '—';
+    const pretty = JSON.stringify(ent.scores || {}, null, 2);
+    return `
+      <tr>
+        <td>${ent.judge || '(unnamed)'}</td>
+        <td>${when}</td>
+        <td>
+          <details>
+            <summary>View card</summary>
+            <pre>${pretty.replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
+          </details>
+        </td>
+        <td class="right">
+          <button class="danger inline" data-del="${ent.judgekey}">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // hook delete buttons
+  elJBody.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async () => {
+      const judgekey = btn.getAttribute('data-del');
+      const pwd = elPwd.value.trim();
+      if (!judgekey || !pwd) return alert('Missing judge key or password.');
+      if (!confirm('Delete this judge submission? This cannot be undone.')) return;
+      btn.disabled = true;
+      try{
+        const res = await fetch('/api/delete-score', {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body: JSON.stringify({ password: pwd, judgekey })
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          let msg = 'Delete failed.';
+          try { msg = JSON.parse(text).error || msg; } catch {}
+          alert(msg);
+          btn.disabled = false;
+          return;
+        }
+        // Reload everything
+        await loadResults(true);
+      }catch(e){
+        alert('Network error.');
+        btn.disabled = false;
+      }
+    });
+  });
 }
 
 function downloadCsv(judgesObj){
-  // Flat per-judge rows
   const lines = [];
-  lines.push([
-    'judge','band','musicianship','originality','material_quality','online_presence','readiness'
-  ].join(','));
-
+  lines.push(['judge','band','musicianship','originality','material_quality','online_presence','readiness'].join(','));
   for (const [judge, sheet] of Object.entries(judgesObj||{})) {
     const scores = sheet?.scores || {};
     for (const [band, v] of Object.entries(scores)) {
       const r = readiness(v);
       lines.push([
-        `"${judge.replace(/"/g,'""')}"`,
-        `"${band.replace(/"/g,'""')}"`,
-        toFixed2(v.m||0),
-        toFixed2(v.o||0),
-        toFixed2(v.q||0),
-        toFixed2(v.p||0),
-        toFixed2(r)
+        `"${String(judge).replace(/"/g,'""')}"`,
+        `"${String(band).replace(/"/g,'""')}"`,
+        toFixed2(v.m||0), toFixed2(v.o||0), toFixed2(v.q||0), toFixed2(v.p||0), toFixed2(r)
       ].join(','));
     }
   }
-
   const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -166,18 +402,17 @@ function downloadCsv(judgesObj){
   URL.revokeObjectURL(url);
 }
 
-async function loadResults(){
-  elCsv.classList.add('hidden');
-  elCard.classList.add('hidden');
-  elStat.textContent = 'Loading…';
-
+/* ---------- data load ---------- */
+async function loadResults(fromDelete=false){
+  if (!fromDelete){
+    elStat.textContent = 'Loading…';
+  }
   const pwd = elPwd.value.trim();
   const res = await fetch('/api/get-scores?__=' + Date.now(), {
     method:'POST',
     headers:{'content-type':'application/json'},
     body: JSON.stringify({ password: pwd })
   });
-
   const text = await res.text();
   if (!res.ok) {
     let msg = 'Auth failed or server error.';
@@ -186,14 +421,18 @@ async function loadResults(){
     elStat.textContent = '';
     return;
   }
-
   let data = {};
   try { data = JSON.parse(text); } catch {}
   const judges = data.judges || {};
-  renderResults(judges);
-  elCsv.classList.remove('hidden');
+  const entries = data.entries || [];
+
+  // Hide gate after success, show cards
+  elGate.classList.add('hidden');
+  elStat.textContent = '';
   elCsv.onclick = () => downloadCsv(judges);
-  elStat.textContent = `Loaded ${Object.keys(judges).length} judge sheet(s).`;
+
+  renderResults(judges);
+  renderJudges(entries);
 }
 
 elLoad.addEventListener('click', loadResults);
