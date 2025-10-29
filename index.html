@@ -79,7 +79,6 @@
     }
     .stat b{font-weight:700}
     iframe{border:none;border-radius:12px;min-height:180px;background:#000;width:100%}
-    /* Spotify slot height (official small player) */
     .spotify-slot iframe{height:152px;min-height:152px;background:transparent}
     .nav-btn{
       display:inline-flex;align-items:center;gap:8px;
@@ -145,7 +144,7 @@
   </footer>
 
   <!-- bump query so browsers fetch latest -->
-  <script src="/bands.js?v=artistpop6"></script>
+  <script src="/bands.js?v=artistpop7"></script>
   <script>
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
@@ -167,7 +166,7 @@
       return null;
     }
 
-    // Build a clean Spotify EMBED URL from any track URL you paste in bands.js
+    // Build EMBED + HREF from any open.spotify.com track URL
     function toSpotifyEmbedTrack(raw){
       if (!raw) return null;
       try{
@@ -179,7 +178,7 @@
           const id = segs[idx+1].split('?')[0];
           return {
             embed: `https://open.spotify.com/embed/track/${id}`,
-            href: `https://open.spotify.com/track/${id}`
+            href:  `https://open.spotify.com/track/${id}`
           };
         }
       }catch(e){}
@@ -211,12 +210,17 @@
       }
     }
 
-    function mountSpotifyWithFallback(slotEl, embedUrl, hrefUrl){
-      // Clear anything in the slot
-      slotEl.innerHTML = "";
-      // Build iframe
+    /* ---------- Spotify embed that never blocks ---------- */
+    function mountSpotifyWithFallback(slotEl, trackUrl){
+      slotEl.innerHTML = ""; // clear
+      const parsed = toSpotifyEmbedTrack(trackUrl);
+      if (!parsed){
+        slotEl.textContent = "No track provided.";
+        return;
+      }
+      const { embed, href } = parsed;
       const ifr = document.createElement("iframe");
-      ifr.src = embedUrl + "?utm_source=generator";
+      ifr.src = embed + "?utm_source=generator";
       ifr.width = "100%";
       ifr.height = "152";
       ifr.loading = "lazy";
@@ -224,17 +228,13 @@
       ifr.referrerPolicy = "no-referrer-when-downgrade";
 
       let loaded = false;
-      const done = () => { loaded = true; };
-
-      ifr.addEventListener("load", done);
-      // Append and start a timeout watchdog
+      ifr.addEventListener("load", () => { loaded = true; });
       slotEl.appendChild(ifr);
 
-      // If the iframe hasn't fired load after 8s, show a simple fallback link
       setTimeout(() => {
         if (!loaded) {
           slotEl.innerHTML =
-            `<a href="${hrefUrl}" target="_blank" rel="noopener"
+            `<a href="${href}" target="_blank" rel="noopener"
                style="display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #2b2023;background:#1a1416;color:#ffefe9;font-weight:600">
                Open on Spotify
              </a>`;
@@ -247,15 +247,7 @@
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
       if (!card) return;
 
-      const sp = card.querySelector("[data-slot=spotify]");
-      const spTitle = card.querySelector("[data-slot=spotifyTitle]");
       const bio = card.querySelector("[data-slot=bio]");
-
-      if (sp && data.spotifyEmbed && data.spotifyHref) {
-        mountSpotifyWithFallback(sp, data.spotifyEmbed, data.spotifyHref);
-      }
-
-      if (spTitle && data.trackName) spTitle.textContent = data.trackName;
       if (bio && data.bio) bio.textContent = data.bio;
 
       ["instagramFollowers","facebookFollowers","youtubeViews","spotifyPopularity"].forEach(key=>{
@@ -274,25 +266,6 @@
       const tb = document.getElementById('alphabetical');
       tb.innerHTML = [...BANDS].sort(byName)
         .map(b=>`<tr><td>${b.name}</td><td>${b.city||''}</td><td>${b.genre||''}</td></tr>`).join('');
-    }
-
-    function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
-
-    function renderBoards(){
-      const metrics = [
-        { key:'spotifyPopularity', target:'board-spotify', label:'score' },
-        { key:'facebookFollowers', target:'board-facebook', label:'followers' },
-        { key:'youtubeViews', target:'board-youtube', label:'views' },
-        { key:'instagramFollowers', target:'board-instagram', label:'followers' },
-      ];
-      metrics.forEach(m => {
-        const list = [...BANDS]
-          .map(b=>({ name:b.name, val:metric(b.name,m.key) }))
-          .sort((a,b)=>b.val-a.val)
-          .slice(0,6);
-        document.getElementById(m.target).innerHTML =
-          list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
-      });
     }
 
     function link(label, url){ return url ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : ''; }
@@ -319,6 +292,7 @@
         websiteUrl ? link('Website', websiteUrl) : ''
       ].filter(Boolean).join(' ');
 
+      /* Spotify slot is rendered empty here, then mounted immediately after render */
       return `
         <article class="band-card" data-band="${b.name}">
           <div class="band-head">
@@ -334,7 +308,7 @@
               ${featured}
               ${live}
               <div class="pill" style="margin-top:12px">Spotify</div>
-              <div data-slot="spotify" class="spotify-slot">Spotify player will load here</div>
+              <div class="spotify-slot" data-slot="spotify" data-track="${b.spotifyEmbedTrack || ''}">Loading…</div>
               <div class="lead" data-slot="spotifyTitle" style="margin-top:6px"></div>
             </div>
             <div class="stats">
@@ -354,9 +328,16 @@
     function renderBands(){
       const wrap = document.getElementById('bands');
       wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
+
+      // Immediately mount Spotify embeds, independent of any API calls
+      document.querySelectorAll('[data-slot="spotify"]').forEach(el=>{
+        const track = el.getAttribute('data-track') || '';
+        if (track) mountSpotifyWithFallback(el, track);
+        else el.textContent = 'No track provided.';
+      });
     }
 
-    /* ---------- live data ---------- */
+    /* ---------- live data (never blocks embeds) ---------- */
     async function getJSON(u){
       try{ const r = await fetch(u); return await r.json(); }
       catch{ return null; }
@@ -366,7 +347,7 @@
       // YouTube top view count from FEATURED video only
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
 
-      // Popularity must come from a true ARTIST url only
+      // Popularity from a true ARTIST url only
       const artistUrl =
         (b.spotifyArtist && isSpotifyArtistUrl(b.spotifyArtist)) ? b.spotifyArtist :
         (b.spotify && isSpotifyArtistUrl(b.spotify)) ? b.spotify :
@@ -376,17 +357,11 @@
         ? await getJSON(`/api/spotify-top?url=${encodeURIComponent(artistUrl)}&market=CY`)
         : null;
 
-      // Build an embed URL from the exact track link you provided
-      const tr = b.spotifyEmbedTrack ? toSpotifyEmbedTrack(b.spotifyEmbedTrack) : null;
-
       const prev = STATS[b.name] || {};
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
-        spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
-        spotifyEmbed: tr?.embed || prev.spotifyEmbed || null,
-        spotifyHref: tr?.href || prev.spotifyHref || null,
-        trackName: sp?.trackName ?? prev.trackName ?? null
+        spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0
       };
 
       patchBandCard(b.name);
@@ -397,14 +372,33 @@
       renderBoards();
     }
 
+    function metric(name, key){ return (STATS[name] && Number(STATS[name][key])) || 0; }
+
+    function renderBoards(){
+      const metrics = [
+        { key:'spotifyPopularity', target:'board-spotify', label:'score' },
+        { key:'facebookFollowers', target:'board-facebook', label:'followers' },
+        { key:'youtubeViews', target:'board-youtube', label:'views' },
+        { key:'instagramFollowers', target:'board-instagram', label:'followers' },
+      ];
+      metrics.forEach(m => {
+        const list = [...BANDS]
+          .map(b=>({ name:b.name, val:metric(b.name,m.key) }))
+          .sort((a,b)=>b.val-a.val)
+          .slice(0,6);
+        document.getElementById(m.target).innerHTML =
+          list.map((row,i)=>`<li><span>${i+1}. ${row.name}</span><span class="meta">${row.val.toLocaleString()} ${m.label}</span></li>`).join('');
+      });
+    }
+
     /* ---------- boot ---------- */
     document.getElementById('year').textContent = new Date().getFullYear();
     renderSummary();
     renderBands();
-    applyManualStats();       // fill bios + manual counts
-    patchAllCardsFromStats(); // show bios immediately
+    applyManualStats();
+    patchAllCardsFromStats();
     renderBoards();
-    loadAllLive();            // hydrate live metrics + spotify embed
+    loadAllLive();
   </script>
 </body>
 </html>
