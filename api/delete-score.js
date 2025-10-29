@@ -8,6 +8,7 @@ function bad(msg, code = 400) {
   });
 }
 
+// same normalization used when the score was saved
 function normalizeJudge(s) {
   return String(s || '')
     .toLowerCase()
@@ -19,32 +20,46 @@ function normalizeJudge(s) {
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
+
     const body = await req.json();
     const password = String(body?.password || '');
+    const judgeRaw = String(body?.judge || '').trim();
+
     const ok = !!(process.env.RESULTS_PASSWORD) && password === process.env.RESULTS_PASSWORD;
     if (!ok) return bad('Unauthorized', 401);
 
-    const rawKey = String(body?.judgekey || '');
-    const judgekey = normalizeJudge(rawKey);
-    if (!judgekey) return bad('Missing judgekey');
+    const judgekey = normalizeJudge(judgeRaw);
+    if (!judgekey) return bad('Invalid judge name');
 
     const url = (process.env.KV_REST_API_URL || '').trim();
     const token = (process.env.KV_REST_API_TOKEN || '').trim();
     if (!url || !token) return bad('KV not configured', 500);
 
-    const key = `wmb:scores:${judgekey}`;
-    const delRes = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+    const key = `wmb:scores/${judgekey}`; // Upstash KV also accepts slash; keep colon variant too
+    const keyColon = `wmb:scores:${judgekey}`;
+
+    // Try colon key first (how submit stored it)
+    let r = await fetch(`${url}/del/${encodeURIComponent(keyColon)}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
-    const data = await delRes.json().catch(()=>null);
-    if (!delRes.ok || data?.error) {
-      return bad(data?.error || 'KV delete failed', 500);
+
+    if (!r.ok) {
+      // try slash key variant just in case
+      r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
     }
 
-    return new Response(JSON.stringify({ ok:true }), {
+    if (!r.ok) {
+      const t = await r.text();
+      return bad(t || 'Delete failed', 500);
+    }
+
+    return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { 'content-type': 'application/json' }
+      headers: { 'content-type': 'application/json' },
     });
   } catch {
     return bad('Server error', 500);
