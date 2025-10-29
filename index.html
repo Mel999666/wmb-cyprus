@@ -145,7 +145,7 @@
   </footer>
 
   <!-- bump query so browsers fetch latest -->
-  <script src="/bands.js?v=artistpop5"></script>
+  <script src="/bands.js?v=artistpop6"></script>
   <script>
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
@@ -156,33 +156,31 @@
     function ytId(url){
       if(!url) return null;
       try{
-        // normalise music.youtube to www
         const u = new URL(url.replace("music.youtube.com","www.youtube.com"));
-        // standard watch?v=
         const v = u.searchParams.get('v');
         if(v) return v;
-        // shorts
         const parts = u.pathname.split('/').filter(Boolean);
         const i = parts.indexOf('shorts');
         if (i !== -1 && parts[i+1]) return parts[i+1];
-        // share links like youtu.be/<id>
         if (u.hostname === 'youtu.be' && parts[0]) return parts[0];
       }catch(e){}
       return null;
     }
 
-    // Build a clean Spotify EMBED URL from any track URL you paste in bands.js (intl prefixes & query ok)
+    // Build a clean Spotify EMBED URL from any track URL you paste in bands.js
     function toSpotifyEmbedTrack(raw){
       if (!raw) return null;
       try{
         const u = new URL(raw);
         if (!/open\.spotify\.com$/.test(u.hostname)) return null;
-        // strip any locale prefix e.g. /intl-xx/
         const segs = u.pathname.split('/').filter(Boolean);
         const idx = segs.indexOf('track');
         if (idx !== -1 && segs[idx+1]) {
           const id = segs[idx+1].split('?')[0];
-          return `https://open.spotify.com/embed/track/${id}`;
+          return {
+            embed: `https://open.spotify.com/embed/track/${id}`,
+            href: `https://open.spotify.com/track/${id}`
+          };
         }
       }catch(e){}
       return null;
@@ -213,6 +211,37 @@
       }
     }
 
+    function mountSpotifyWithFallback(slotEl, embedUrl, hrefUrl){
+      // Clear anything in the slot
+      slotEl.innerHTML = "";
+      // Build iframe
+      const ifr = document.createElement("iframe");
+      ifr.src = embedUrl + "?utm_source=generator";
+      ifr.width = "100%";
+      ifr.height = "152";
+      ifr.loading = "lazy";
+      ifr.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+      ifr.referrerPolicy = "no-referrer-when-downgrade";
+
+      let loaded = false;
+      const done = () => { loaded = true; };
+
+      ifr.addEventListener("load", done);
+      // Append and start a timeout watchdog
+      slotEl.appendChild(ifr);
+
+      // If the iframe hasn't fired load after 8s, show a simple fallback link
+      setTimeout(() => {
+        if (!loaded) {
+          slotEl.innerHTML =
+            `<a href="${hrefUrl}" target="_blank" rel="noopener"
+               style="display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #2b2023;background:#1a1416;color:#ffefe9;font-weight:600">
+               Open on Spotify
+             </a>`;
+        }
+      }, 8000);
+    }
+
     function patchBandCard(name){
       const data = STATS[name] || {};
       const card = document.querySelector(`[data-band="${CSS.escape(name)}"]`);
@@ -222,15 +251,8 @@
       const spTitle = card.querySelector("[data-slot=spotifyTitle]");
       const bio = card.querySelector("[data-slot=bio]");
 
-      if (sp && data.spotifyEmbed) {
-        sp.innerHTML = `
-          <iframe
-            src="${data.spotifyEmbed}?utm_source=generator"
-            width="100%"
-            height="152"
-            frameborder="0"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"></iframe>`;
+      if (sp && data.spotifyEmbed && data.spotifyHref) {
+        mountSpotifyWithFallback(sp, data.spotifyEmbed, data.spotifyHref);
       }
 
       if (spTitle && data.trackName) spTitle.textContent = data.trackName;
@@ -355,14 +377,15 @@
         : null;
 
       // Build an embed URL from the exact track link you provided
-      const forcedEmbed = b.spotifyEmbedTrack ? toSpotifyEmbedTrack(b.spotifyEmbedTrack) : null;
+      const tr = b.spotifyEmbedTrack ? toSpotifyEmbedTrack(b.spotifyEmbedTrack) : null;
 
       const prev = STATS[b.name] || {};
       STATS[b.name] = {
         ...prev,
         youtubeViews: yt?.views ?? prev.youtubeViews ?? 0,
         spotifyPopularity: sp?.popularity ?? prev.spotifyPopularity ?? 0,
-        spotifyEmbed: forcedEmbed || prev.spotifyEmbed || null,
+        spotifyEmbed: tr?.embed || prev.spotifyEmbed || null,
+        spotifyHref: tr?.href || prev.spotifyHref || null,
         trackName: sp?.trackName ?? prev.trackName ?? null
       };
 
