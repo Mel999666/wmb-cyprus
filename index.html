@@ -144,8 +144,11 @@
   </footer>
 
   <!-- bump query so browsers fetch latest -->
-  <script src="/bands.js?v=artistpop7"></script>
+  <script src="/bands.js?v=embedRetry3"></script>
   <script>
+    const APP_VERSION = "embed-retry-3";
+    console.log("[WMB] version:", APP_VERSION);
+
     const STATS = Object.create(null);
     const BANDS = Array.isArray(window.BANDS) ? window.BANDS : [];
 
@@ -166,7 +169,7 @@
       return null;
     }
 
-    // Build EMBED + HREF from any open.spotify.com track URL
+    // Parse any open.spotify.com track URL into {embed, href}
     function toSpotifyEmbedTrack(raw){
       if (!raw) return null;
       try{
@@ -210,36 +213,56 @@
       }
     }
 
-    /* ---------- Spotify embed that never blocks ---------- */
-    function mountSpotifyWithFallback(slotEl, trackUrl){
-      slotEl.innerHTML = ""; // clear
+    /* ---------- Spotify embed: clean, with silent retries ---------- */
+    function mountSpotifyClean(slotEl, trackUrl){
+      slotEl.innerHTML = ""; // do not show proxy errors here
       const parsed = toSpotifyEmbedTrack(trackUrl);
       if (!parsed){
         slotEl.textContent = "No track provided.";
         return;
       }
       const { embed, href } = parsed;
-      const ifr = document.createElement("iframe");
-      ifr.src = embed + "?utm_source=generator";
-      ifr.width = "100%";
-      ifr.height = "152";
-      ifr.loading = "lazy";
-      ifr.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-      ifr.referrerPolicy = "no-referrer-when-downgrade";
 
-      let loaded = false;
-      ifr.addEventListener("load", () => { loaded = true; });
-      slotEl.appendChild(ifr);
+      let tries = 0;
+      const maxTries = 3;
 
-      setTimeout(() => {
-        if (!loaded) {
-          slotEl.innerHTML =
-            `<a href="${href}" target="_blank" rel="noopener"
-               style="display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #2b2023;background:#1a1416;color:#ffefe9;font-weight:600">
-               Open on Spotify
-             </a>`;
-        }
-      }, 8000);
+      const mountOnce = () => {
+        tries++;
+        // fresh iframe each attempt
+        const wrap = document.createElement("div");
+        const ifr = document.createElement("iframe");
+        ifr.src = embed + "?utm_source=generator";
+        ifr.width = "100%";
+        ifr.height = "152";
+        ifr.loading = "lazy";
+        ifr.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+        ifr.referrerPolicy = "no-referrer-when-downgrade";
+        wrap.appendChild(ifr);
+
+        // Replace previous content with the new iframe only
+        slotEl.replaceChildren(wrap);
+
+        let loaded = false;
+        const onLoaded = () => { loaded = true; };
+        ifr.addEventListener("load", onLoaded);
+
+        // Retry if it doesn't load in time
+        setTimeout(() => {
+          if (!loaded && tries < maxTries) {
+            mountOnce(); // try again
+          } else if (!loaded && tries >= maxTries) {
+            // Keep the last iframe visible and add a tiny link below it
+            const link = document.createElement("div");
+            link.innerHTML = `<a href="${href}" target="_blank" rel="noopener"
+              style="display:inline-block;margin-top:8px;font-size:12px;color:#ffefe9;opacity:.8">
+              Open on Spotify
+            </a>`;
+            slotEl.appendChild(link);
+          }
+        }, 4000); // 4s per attempt
+      };
+
+      mountOnce();
     }
 
     function patchBandCard(name){
@@ -292,7 +315,6 @@
         websiteUrl ? link('Website', websiteUrl) : ''
       ].filter(Boolean).join(' ');
 
-      /* Spotify slot is rendered empty here, then mounted immediately after render */
       return `
         <article class="band-card" data-band="${b.name}">
           <div class="band-head">
@@ -329,22 +351,22 @@
       const wrap = document.getElementById('bands');
       wrap.innerHTML = BANDS.sort(byName).map(bandCardHTML).join('');
 
-      // Immediately mount Spotify embeds, independent of any API calls
+      // Mount Spotify embeds immediately and independently of APIs
       document.querySelectorAll('[data-slot="spotify"]').forEach(el=>{
         const track = el.getAttribute('data-track') || '';
-        if (track) mountSpotifyWithFallback(el, track);
+        if (track) mountSpotifyClean(el, track);
         else el.textContent = 'No track provided.';
       });
     }
 
-    /* ---------- live data (never blocks embeds) ---------- */
+    /* ---------- live data (does not affect embeds) ---------- */
     async function getJSON(u){
       try{ const r = await fetch(u); return await r.json(); }
       catch{ return null; }
     }
 
     async function loadBandLive(b){
-      // YouTube top view count from FEATURED video only
+      // Featured YouTube views
       const yt = b.youtube ? await getJSON(`/api/youtube?url=${encodeURIComponent(b.youtube)}`) : null;
 
       // Popularity from a true ARTIST url only
