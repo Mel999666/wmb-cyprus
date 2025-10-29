@@ -104,17 +104,44 @@
   <section class="card" id="how-card">
     <div class="h3" style="font-weight:700;margin:0 0 10px">How these results are calculated</div>
     <ul>
-      <li>Each judge scores every band: Musicianship 40 percent, Originality 25 percent, Online Material Quality 20 percent, Online Presence 15 percent. These weights produce a judge’s single “readiness” score per band.</li>
-      <li>We convert each judge’s scores into a <em>ranking of bands</em>. This removes differences in how strict or generous a judge is.</li>
-      <li>We order bands by their <b>median rank</b> across judges. The median is robust to one wild view and represents shared consensus.</li>
-      <li>Tie-breakers: average rank, a trimmed standardized average of readiness, and head-to-head who is placed higher by most judges.</li>
-      <li>Two guardrails balance consensus and genuine standouts:
-        <ul>
-          <li><b>Consensus guardrail</b>: if a band appears in the top 6 for at least three judges, they outrank bands that are not in the top 6 for at least two judges.</li>
-          <li><b>Passion guardrail</b>: if a band is ranked 1st or 2nd by at least three judges, they are guaranteed a top-6 place.</li>
-        </ul>
-      </li>
-      <li>We still display the <b>Avg Readiness</b> column for transparency. The official ordering uses the rank-based method above.</li>
+     <ul>
+  <li>Each judge scores every band in four categories:</li>
+  <ul>
+    <li>Musicianship (40%)</li>
+    <li>Originality (25%)</li>
+    <li>Material quality (20%)</li>
+    <li>Stage or online presence (15%)</li>
+  </ul>
+  <li>These percentages are combined into a single readiness score for each band per judge.</li>
+
+  <li><b>Step 1: Normalizing scores</b> — Judges vary in how strict or generous they are, so we convert all scores into ranks.  
+  Each judge’s favourite band gets rank 1, the next gets rank 2, and so on. This ensures every judge’s opinion carries equal weight.</li>
+
+  <li><b>Step 2: Combining ranks across judges</b> — We calculate:</li>
+  <ul>
+    <li><b>Median rank</b> (the middle value) — main measure of shared consensus.</li>
+    <li><b>Average rank</b> — used as a tiebreaker when median ranks are the same.</li>
+    <li><b>Average readiness</b> — shown for transparency, only used if the others are identical.</li>
+  </ul>
+  <li>Lower ranks indicate stronger overall placement.</li>
+
+  <li><b>Step 3: Guardrails</b> — Two additional checks ensure both consensus and standout passion are respected:</li>
+  <ul>
+    <li><b>Consensus rule:</b> If a band appears in the top 6 of at least three judges, they outrank bands that do not.</li>
+    <li><b>Passion rule:</b> If a band is ranked 1st or 2nd by at least three judges, they are guaranteed a top-6 position.</li>
+  </ul>
+
+  <li><b>Step 4: Final order</b> — Bands are ordered using the following hierarchy:</li>
+  <ul>
+    <li>Median rank</li>
+    <li>Average rank</li>
+    <li>Average readiness</li>
+    <li>Guardrail eligibility (if triggered)</li>
+  </ul>
+
+  <li>This method balances collective agreement and standout performances while keeping the process transparent and fair.</li>
+</ul>
+
     </ul>
   </section>
 
