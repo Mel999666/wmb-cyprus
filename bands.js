@@ -72,7 +72,7 @@ window.BANDS = [
     genre: "Hard Rock",
     city: "Nicosia",
     youtube: "https://www.youtube.com/watch?v=Ocef41DXZOk",
-    liveYoutube: "https://www.youtube.com/watch?v=1-ZZ6nRgT7g",
+    liveYoutube: "https://www.youtube.com/watch?v=EwDCMB4Eidk",
     facebookUrl: "https://www.facebook.com/share/1HDsTp1voH/?mibextid=wwXIfr",
     // Canonical artist URL to ensure popularity loads
     spotify: "https://open.spotify.com/artist/7ftPQLoFzTHVJfR8CU8fZ7",
