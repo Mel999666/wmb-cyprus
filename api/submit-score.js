@@ -1,18 +1,7 @@
 // /api/submit-score.js
 export const config = { runtime: 'edge' };
 
-// Use the same KV creds logic as kv-scan (this is known-working)
-function pickKvCreds() {
-  const url =
-    (process.env.KV_REST_API_URL || '').trim() ||
-    (process.env.KV_URL || '').trim();
-  const token =
-    (process.env.KV_REST_API_TOKEN || '').trim() ||
-    (process.env.KV_REST_API_READ_ONLY_TOKEN || '').trim();
-
-  return { url, token };
-}
-
+// ---- same password + helpers as before ----
 function okJudgePass(pw) {
   const judge = (process.env.JUDGE_PASSWORD || '').trim();
   return !!pw && !!judge && pw === judge;
@@ -34,6 +23,17 @@ function normalizeJudge(s) {
     .replace(/\s+/g, ' ');
 }
 
+// ---- NEW: use same env picking logic as get-scores ----
+function pickKvCreds() {
+  const url =
+    (process.env.KV_REST_API_URL || '').trim() ||
+    (process.env.KV_URL || '').trim();
+  const token =
+    (process.env.KV_REST_API_TOKEN || '').trim() ||
+    (process.env.KV_REST_API_READ_ONLY_TOKEN || '').trim();
+  return { url, token };
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
@@ -51,28 +51,49 @@ export default async function handler(req) {
     if (!judgekey) return bad('Invalid judge name');
 
     const { url, token } = pickKvCreds();
-    if (!url || !token) return bad('KV not configured', 500);
+    if (!url || !token) {
+      return bad(
+        `KV not configured. url="${url}", tokenPresent=${!!token}`,
+        500
+      );
+    }
 
     const key = `wmb:scores:${judgekey}`;
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
-    const value = encodeURIComponent(JSON.stringify(valueObj));
+    const json = JSON.stringify(valueObj);
+    const encodedValue = encodeURIComponent(json);
 
-    const kvUrl = `${url}/set/${encodeURIComponent(key)}/${value}`;
-    const r = await fetch(kvUrl, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const fullUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
 
-    const text = await r.text();
-    let data;
+    let upstashRes;
+    let text;
     try {
-      data = JSON.parse(text);
-    } catch {
-      data = null;
+      upstashRes = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      text = await upstashRes.text();
+    } catch (err) {
+      // This is where we were getting "internal error"
+      console.error('submit-score Upstash fetch error', err);
+      return bad(
+        `KV request failed for URL "${fullUrl}": ${err.message || String(err)}`,
+        500
+      );
     }
 
-    if (!r.ok || data?.error) {
-      return bad(data?.error || `KV write failed: ${text || 'unknown error'}`, 500);
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      // non-JSON from Upstash, still show it
+    }
+
+    if (!upstashRes.ok || (data && data.error)) {
+      return bad(
+        `KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`,
+        500
+      );
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -80,6 +101,7 @@ export default async function handler(req) {
       headers: { 'content-type': 'application/json' },
     });
   } catch (e) {
-    return bad(e?.message || 'Server error', 500);
+    console.error('submit-score handler error', e);
+    return bad(e?.stack || e?.message || 'Server error', 500);
   }
 }
