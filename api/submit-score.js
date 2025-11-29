@@ -1,91 +1,70 @@
 // /api/submit-score.js
-export const config = { runtime: "edge" };
-import { chooseKvCreds } from "./_kv-helpers.js";
+export const config = { runtime: 'edge' };
+import { chooseKvCreds } from './_kv-helpers.js';
 
 function okJudgePass(pw) {
-  const judge = (process.env.JUDGE_PASSWORD || "").trim();
+  const judge = (process.env.JUDGE_PASSWORD || '').trim();
   return !!pw && !!judge && pw === judge;
 }
 
 function bad(msg, code = 400) {
   return new Response(JSON.stringify({ error: msg }), {
     status: code,
-    headers: { "content-type": "application/json" }
+    headers: { 'content-type': 'application/json' },
   });
 }
 
 // Normalize judge name -> stable key
 function normalizeJudge(s) {
-  return String(s || "")
+  return String(s || '')
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s]+/g, "")
-    .replace(/\s+/g, " ");
+    .replace(/[^a-z0-9\s]+/g, '')
+    .replace(/\s+/g, ' ');
 }
 
 export default async function handler(req) {
   try {
-    if (req.method !== "POST") return bad("Use POST", 405);
+    if (req.method !== 'POST') return bad('Use POST', 405);
 
     const body = await req.json();
-    const judgeRaw = String(body?.judge || "").trim();
-    const password = String(body?.password || "");
+    const judgeRaw = String(body?.judge || '').trim();
+    const password = String(body?.password || '');
     const scores = body?.scores || {};
 
-    if (!okJudgePass(password)) return bad("Unauthorized", 401);
-    if (!judgeRaw) return bad("Missing judge name");
-    if (typeof scores !== "object") return bad("Invalid scores payload");
+    if (!okJudgePass(password)) return bad('Unauthorized', 401);
+    if (!judgeRaw) return bad('Missing judge name');
+    if (typeof scores !== 'object') return bad('Invalid scores payload');
 
     const judgekey = normalizeJudge(judgeRaw);
-    if (!judgekey) return bad("Invalid judge name");
+    if (!judgekey) return bad('Invalid judge name');
 
     // Use the same Upstash creds as get-scores (write pair preferred)
-    const { url, token } = chooseKvCreds("write");
-    if (!url || !token) return bad("KV not configured", 500);
+    const { url, token } = chooseKvCreds('write');
+    if (!url || !token) return bad('KV not configured', 500);
 
     const key = `wmb:scores:${judgekey}`;
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
     const value = encodeURIComponent(JSON.stringify(valueObj));
 
-    const upstashUrl = `${url}/set/${encodeURIComponent(key)}/${value}`;
+    // IMPORTANT: use GET-style REST alias (no method: defaults to GET)
+    const r = await fetch(
+      `${url}/set/${encodeURIComponent(key)}/${value}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
 
-    let r;
-    try {
-      r = await fetch(upstashUrl, {
-        // Upstash Redis REST expects GET with the value in the URL
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-    } catch (err) {
-      return bad(
-        "KV request failed: " +
-          (err && err.message ? err.message : "network error"),
-        500
-      );
-    }
-
-    const text = await r.text();
-    let data = null;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      // Upstash may return plain text; ignore JSON parse failure
-    }
-
-    if (!r.ok || (data && data.error)) {
-      const msg =
-        (data && data.error) ||
-        `KV write failed (status ${r.status}): ${text.slice(0, 200)}`;
-      return bad(msg, 500);
+    const data = await r.json();
+    if (!r.ok || data?.error) {
+      return bad(data?.error || 'KV write failed', 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { "content-type": "application/json" }
+      headers: { 'content-type': 'application/json' },
     });
   } catch (e) {
-    return bad(e && e.message ? e.message : "Server error", 500);
+    return bad('Server error', 500);
   }
 }
