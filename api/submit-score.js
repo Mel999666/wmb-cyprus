@@ -1,68 +1,67 @@
 // /api/submit-score.js
-export const config = { runtime: 'edge' };
-import { chooseKvCreds } from './_kv-helpers.js';
+export const config = { runtime: "edge" };
+import { chooseKvCreds } from "./_kv-helpers.js";
 
 function okJudgePass(pw) {
-  const judge = (process.env.JUDGE_PASSWORD || '').trim();
+  const judge = (process.env.JUDGE_PASSWORD || "").trim();
   return !!pw && !!judge && pw === judge;
 }
 
 function bad(msg, code = 400) {
   return new Response(JSON.stringify({ error: msg }), {
     status: code,
-    headers: { 'content-type': 'application/json' },
+    headers: { "content-type": "application/json" }
   });
 }
 
 // Normalize judge name -> stable key
 function normalizeJudge(s) {
-  return String(s || '')
+  return String(s || "")
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s]+/g, '')
-    .replace(/\s+/g, ' ');
+    .replace(/[^a-z0-9\s]+/g, "")
+    .replace(/\s+/g, " ");
 }
 
 export default async function handler(req) {
   try {
-    if (req.method !== 'POST') return bad('Use POST', 405);
+    if (req.method !== "POST") return bad("Use POST", 405);
 
     const body = await req.json();
-    const judgeRaw = String(body?.judge || '').trim();
-    const password = String(body?.password || '');
+    const judgeRaw = String(body?.judge || "").trim();
+    const password = String(body?.password || "");
     const scores = body?.scores || {};
 
-    if (!okJudgePass(password)) return bad('Unauthorized', 401);
-    if (!judgeRaw) return bad('Missing judge name');
-    if (typeof scores !== 'object') return bad('Invalid scores payload');
+    if (!okJudgePass(password)) return bad("Unauthorized", 401);
+    if (!judgeRaw) return bad("Missing judge name");
+    if (typeof scores !== "object") return bad("Invalid scores payload");
 
     const judgekey = normalizeJudge(judgeRaw);
-    if (!judgekey) return bad('Invalid judge name');
+    if (!judgekey) return bad("Invalid judge name");
 
-    // Upstash credentials (write mode)
-    const { url, token } = chooseKvCreds('write');
-    if (!url || !token) return bad('KV not configured', 500);
+    // Use the same Upstash creds as get-scores (write pair preferred)
+    const { url, token } = chooseKvCreds("write");
+    if (!url || !token) return bad("KV not configured", 500);
 
     const key = `wmb:scores:${judgekey}`;
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
-    const valueJson = JSON.stringify(valueObj);
+    const value = encodeURIComponent(JSON.stringify(valueObj));
 
-    // Use POST with JSON body instead of putting value in the URL
-    const upstashUrl = `${url}/set/${encodeURIComponent(key)}`;
+    const upstashUrl = `${url}/set/${encodeURIComponent(key)}/${value}`;
 
     let r;
     try {
       r = await fetch(upstashUrl, {
-        method: 'POST',
+        // Upstash Redis REST expects GET with the value in the URL
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ value: valueJson }),
+          Authorization: `Bearer ${token}`
+        }
       });
     } catch (err) {
       return bad(
-        'KV request failed: ' + (err && err.message ? err.message : 'network error'),
+        "KV request failed: " +
+          (err && err.message ? err.message : "network error"),
         500
       );
     }
@@ -72,7 +71,7 @@ export default async function handler(req) {
     try {
       data = JSON.parse(text);
     } catch {
-      // Upstash may return plain text or HTML on error; ignore JSON parse failure
+      // Upstash may return plain text; ignore JSON parse failure
     }
 
     if (!r.ok || (data && data.error)) {
@@ -84,9 +83,9 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { "content-type": "application/json" }
     });
   } catch (e) {
-    return bad(e && e.message ? e.message : 'Server error', 500);
+    return bad(e && e.message ? e.message : "Server error", 500);
   }
 }
