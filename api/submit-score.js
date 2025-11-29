@@ -1,7 +1,9 @@
 // /api/submit-score.js
 export const config = { runtime: 'edge' };
 
-// ---- same password + helpers as before ----
+import { chooseKvCreds } from './_kv-helpers.js';
+
+// Judge password check
 function okJudgePass(pw) {
   const judge = (process.env.JUDGE_PASSWORD || '').trim();
   return !!pw && !!judge && pw === judge;
@@ -23,17 +25,6 @@ function normalizeJudge(s) {
     .replace(/\s+/g, ' ');
 }
 
-// ---- NEW: use same env picking logic as get-scores ----
-function pickKvCreds() {
-  const url =
-    (process.env.KV_REST_API_URL || '').trim() ||
-    (process.env.KV_URL || '').trim();
-  const token =
-    (process.env.KV_REST_API_TOKEN || '').trim() ||
-    (process.env.KV_REST_API_READ_ONLY_TOKEN || '').trim();
-  return { url, token };
-}
-
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
@@ -50,7 +41,7 @@ export default async function handler(req) {
     const judgekey = normalizeJudge(judgeRaw);
     if (!judgekey) return bad('Invalid judge name');
 
-    const { url, token } = pickKvCreds();
+    const { url, token } = chooseKvCreds('write');
     if (!url || !token) {
       return bad(
         `KV not configured. url="${url}", tokenPresent=${!!token}`,
@@ -67,6 +58,7 @@ export default async function handler(req) {
 
     let upstashRes;
     let text;
+
     try {
       upstashRes = await fetch(fullUrl, {
         method: 'POST',
@@ -74,7 +66,6 @@ export default async function handler(req) {
       });
       text = await upstashRes.text();
     } catch (err) {
-      // This is where we were getting "internal error"
       console.error('submit-score Upstash fetch error', err);
       return bad(
         `KV request failed for URL "${fullUrl}": ${err.message || String(err)}`,
@@ -86,7 +77,7 @@ export default async function handler(req) {
     try {
       data = text ? JSON.parse(text) : null;
     } catch {
-      // non-JSON from Upstash, still show it
+      // non-JSON body – keep raw text in error if needed
     }
 
     if (!upstashRes.ok || (data && data.error)) {
