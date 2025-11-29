@@ -1,6 +1,17 @@
 // /api/submit-score.js
 export const config = { runtime: 'edge' };
-import { chooseKvCreds } from './_kv-helpers.js';
+
+// Use the same KV creds logic as kv-scan (this is known-working)
+function pickKvCreds() {
+  const url =
+    (process.env.KV_REST_API_URL || '').trim() ||
+    (process.env.KV_URL || '').trim();
+  const token =
+    (process.env.KV_REST_API_TOKEN || '').trim() ||
+    (process.env.KV_REST_API_READ_ONLY_TOKEN || '').trim();
+
+  return { url, token };
+}
 
 function okJudgePass(pw) {
   const judge = (process.env.JUDGE_PASSWORD || '').trim();
@@ -39,25 +50,29 @@ export default async function handler(req) {
     const judgekey = normalizeJudge(judgeRaw);
     if (!judgekey) return bad('Invalid judge name');
 
-    // Use the same Upstash creds as get-scores (write pair preferred)
-    const { url, token } = chooseKvCreds('write');
+    const { url, token } = pickKvCreds();
     if (!url || !token) return bad('KV not configured', 500);
 
     const key = `wmb:scores:${judgekey}`;
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
     const value = encodeURIComponent(JSON.stringify(valueObj));
 
-    // IMPORTANT: use GET-style REST alias (no method: defaults to GET)
-    const r = await fetch(
-      `${url}/set/${encodeURIComponent(key)}/${value}`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
+    const kvUrl = `${url}/set/${encodeURIComponent(key)}/${value}`;
+    const r = await fetch(kvUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    const data = await r.json();
+    const text = await r.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+
     if (!r.ok || data?.error) {
-      return bad(data?.error || 'KV write failed', 500);
+      return bad(data?.error || `KV write failed: ${text || 'unknown error'}`, 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -65,6 +80,6 @@ export default async function handler(req) {
       headers: { 'content-type': 'application/json' },
     });
   } catch (e) {
-    return bad('Server error', 500);
+    return bad(e?.message || 'Server error', 500);
   }
 }
