@@ -47,14 +47,26 @@ export default async function handler(req) {
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
     const value = encodeURIComponent(JSON.stringify(valueObj));
 
-    const r = await fetch(`${url}/set/${encodeURIComponent(key)}/${value}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const r = await fetch(
+      `${url}/set/${encodeURIComponent(key)}/${value}`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
-    const data = await r.json();
-    if (!r.ok || data?.error) {
-      return bad(data?.error || 'KV write failed', 500);
+    // Upstash often returns plain text ("OK"). Don't assume JSON.
+    const text = await r.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = undefined;
+    }
+
+    if (!r.ok || (data && data.error)) {
+      // Prefer any error coming back from Upstash, otherwise fall back to text.
+      return bad(data?.error || text || 'KV write failed', 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
