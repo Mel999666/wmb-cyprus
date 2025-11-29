@@ -1,7 +1,13 @@
 // /api/get-scores.js
 export const config = { runtime: 'edge' };
 
-// Same KV helper as kv-scan and submit-score
+function bad(msg, code = 400) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status: code,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
 function pickKvCreds() {
   const url =
     (process.env.KV_REST_API_URL || '').trim() ||
@@ -9,15 +15,51 @@ function pickKvCreds() {
   const token =
     (process.env.KV_REST_API_TOKEN || '').trim() ||
     (process.env.KV_REST_API_READ_ONLY_TOKEN || '').trim();
-
   return { url, token };
 }
 
-function bad(msg, code = 400) {
-  return new Response(JSON.stringify({ error: msg }), {
-    status: code,
-    headers: { 'content-type': 'application/json' },
-  });
+// Upstash SCAN that tolerates all the JSON shapes they've used
+async function scanAllWithPrefix(url, token, prefix) {
+  const out = [];
+  let cursor = '0';
+  const match = `${prefix}*`;
+  const count = 200;
+
+  do {
+    const res = await fetch(
+      `${url}/scan/${cursor}?match=${encodeURIComponent(match)}&count=${count}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`SCAN failed: ${await res.text() || res.status}`);
+
+    // Accept any shape: {cursor, keys} OR {cursor, results} OR ["cursor", ["k1"]] OR {result:{cursor,keys}}
+    let data = await res.json();
+    if (data && data.result) data = data.result;
+
+    let next = '0';
+    let batch = [];
+
+    if (Array.isArray(data) && data.length >= 2) {
+      next = String(data[0] ?? '0');
+      batch = Array.isArray(data[1]) ? data[1] : [];
+    } else {
+      next = String(data.cursor ?? data.next_cursor ?? '0');
+      batch = data.keys || data.results || data.result || [];
+    }
+
+    for (const k of batch) if (typeof k === 'string' && k.startsWith(prefix)) out.push(k);
+    cursor = next;
+  } while (cursor !== '0');
+
+  return out;
+}
+
+// Accept both old plain-JSON values and new URI-encoded JSON values
+function safeParseValue(v) {
+  if (v == null) return null;
+  try { return JSON.parse(decodeURIComponent(v)); } catch {}
+  try { return JSON.parse(v); } catch {}
+  return null;
 }
 
 export default async function handler(req) {
@@ -26,6 +68,8 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
+    const debug = !!body?.debug;
+
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
@@ -34,84 +78,50 @@ export default async function handler(req) {
     if (!url || !token) return bad('KV not configured', 500);
 
     const prefix = 'wmb:scores:';
-    const scanUrl = `${url}/scan/0?match=${encodeURIComponent(prefix + '*')}&count=500`;
-    const scanRes = await fetch(scanUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const keys = await scanAllWithPrefix(url, token, prefix);
 
-    if (!scanRes.ok) {
-      const text = await scanRes.text();
-      return bad(`KV scan failed: ${text || scanRes.statusText}`, 500);
-    }
-
-    const scanData = await scanRes.json();
-    let keys = [];
-
-    if (Array.isArray(scanData) && scanData.length >= 2) {
-      keys = Array.isArray(scanData[1]) ? scanData[1] : [];
-    } else {
-      keys = scanData.keys || scanData.results || scanData.result || [];
-    }
-
-    if (!Array.isArray(keys)) keys = [];
-
-    const judges = {};
     const entries = [];
-
-    // Fetch each key one by one (small N, keeps it simple)
     for (const key of keys) {
-      const getUrl = `${url}/get/${encodeURIComponent(key)}`;
-      const r = await fetch(getUrl, {
-        headers: { Authorization: `Bearer ${token}` },
+      const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-
       if (!r.ok) continue;
 
-      let text;
-      try {
-        text = await r.text();
-      } catch {
-        continue;
-      }
+      const g = await r.json();
+      // Upstash sometimes returns {result: "..."} or {value:"..."}
+      const raw = g?.result ?? g?.value ?? null;
+      const obj = safeParseValue(raw);
+      if (!obj) continue;
 
-      let parsed;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        parsed = { result: text };
-      }
-
-      let raw = parsed?.result ?? parsed?.value ?? null;
-      if (typeof raw !== 'string') continue;
-
-      let obj;
-      try {
-        obj = JSON.parse(decodeURIComponent(raw));
-      } catch {
-        continue;
-      }
-
-      if (!obj || typeof obj !== 'object') continue;
-
-      const { judge, judgekey, scores, ts } = obj;
-      if (!judgekey) continue;
-
-      judges[judgekey] = { judge, judgekey, scores, ts };
-      entries.push({ judge, judgekey, scores, ts });
+      entries.push({
+        judge: obj.judge || '',
+        judgekey: obj.judgekey || key.replace(prefix, ''),
+        scores: obj.scores || {},
+        ts: Number(obj.ts) || 0
+      });
     }
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        count: entries.length,
-        judges,
-        entries,
-        scannedPrefix: prefix,
-        scannedCount: keys.length,
-      }),
-      { status: 200, headers: { 'content-type': 'application/json' } }
-    );
-  } catch (e) {
-    return bad(e?.message || 'Server error', 500);
+    const judges = {};
+    for (const e of entries) {
+      const id = e.judge || e.judgekey;
+      judges[id] = { judge: id, when: e.ts, scores: e.scores };
+    }
+
+    const payload = { ok: true, count: entries.length, judges, entries };
+    if (debug) {
+      payload.mode = url.includes('upstash.io') ? 'write' : 'unknown';
+      payload.scannedPrefix = `${prefix}*`;
+      payload.scannedCount = keys.length;
+      payload.urlHost = (() => { try { return new URL(url).host; } catch { return url; } })();
+      payload.scannedKeys = keys;
+    }
+
+    return new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    });
+    } catch (e) {
+    console.error('get-scores handler error', e);
+    return bad(e?.stack || e?.message || 'Server error', 500);
   }
 }
