@@ -45,28 +45,39 @@ export default async function handler(req) {
 
     const key = `wmb:scores:${judgekey}`;
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
-    const value = encodeURIComponent(JSON.stringify(valueObj));
 
-    const r = await fetch(
-      `${url}/set/${encodeURIComponent(key)}/${value}`,
-      {
+    // Single JSON encode, then URI-encode once for the path
+    const valueJson = JSON.stringify(valueObj);
+    const upstashUrl =
+      `${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(valueJson)}`;
+
+    let r;
+    try {
+      r = await fetch(upstashUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      });
+    } catch (err) {
+      // Network / fetch-level failure
+      return bad(
+        'KV request failed: ' + (err && err.message ? err.message : 'network error'),
+        500
+      );
+    }
 
-    // Upstash often returns plain text ("OK"). Don't assume JSON.
     const text = await r.text();
-    let data;
+    let data = null;
     try {
       data = JSON.parse(text);
     } catch {
-      data = undefined;
+      // Upstash sometimes returns HTML or plain text on error; ignore JSON parse failure
     }
 
     if (!r.ok || (data && data.error)) {
-      // Prefer any error coming back from Upstash, otherwise fall back to text.
-      return bad(data?.error || text || 'KV write failed', 500);
+      const msg =
+        (data && data.error) ||
+        `KV write failed (status ${r.status}): ${text.slice(0, 200)}`;
+      return bad(msg, 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -74,6 +85,6 @@ export default async function handler(req) {
       headers: { 'content-type': 'application/json' },
     });
   } catch (e) {
-    return bad('Server error', 500);
+    return bad(e && e.message ? e.message : 'Server error', 500);
   }
 }
