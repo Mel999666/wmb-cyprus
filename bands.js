@@ -57,7 +57,7 @@ window.BANDS = [
     genre: "Dark Metal",
     city: "Limassol",
     youtube: "https://www.youtube.com/watch?v=ASzy9bWighQ",
-    liveYoutube: "",
+    liveYoutube: "https://www.youtube.com/watch?v=r5B56--6-uw&list=RDr5B56--6-uw&start_radio=1",
     facebookUrl: "https://www.facebook.com/profile.php?id=61561403806389",
     spotify: "https://open.spotify.com/artist/4T0bImsYNQXp9JdY1RBzEu?si=ZVC-qI2iR4yviW0ioI41GQ",
     spotifyEmbedTrack: "https://open.spotify.com/track/7jEEO3ydcqxzLl4YHNufZF?si=fb263213c1d04278",
