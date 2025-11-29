@@ -159,5 +159,21 @@ window.BANDS = [
     igUserId: "",
     bio: "We are YMNKY!, a Cyprus-born alternative metal band with a mission to bend the genre's rules. Our sound? A daring mix of melodic vocals, rap, and screams, all set within a dark, captivating universe that unfolds with each track. Our music is an adventure, inviting you to dive deep into our unique, resonant world. YMNKY!'s music transcends boundaries, blending the raw energy of alternative metal, the catchiness of pop rock, and the experimental spirit of electronic rock. Their unique fusion of styles creates a sonic experience that is both powerful and melodically captivating, appealing to a diverse audience with varied musical tastes.",
     manualStats: { facebookFollowers: 48, instagramFollowers: 2648 }
+  },
+  {
+    name: "Ars Notoria",
+    genre: "Avantgarde",
+    city: "Nicosia",
+    youtube: "https://www.youtube.com/watch?v=iVxau8FoB7A",
+    liveYoutube: "https://www.youtube.com/watch?v=zvKyYPwf-jk",
+    facebookUrl: "https://www.facebook.com/share/1BDwKJQ9cH/?mibextid=wwXIfr",
+    spotify: "https://open.spotify.com/artist/44aSlHINEZeiEqNWwn8bgd?si=VfQudrJITMiSNM0Ceby39Q",
+    spotifyEmbedTrack: "https://open.spotify.com/track/683ndzqSKPXj2RPxxaJm60?si=40e6567ce81f4509",
+    instagramUrl: "https://www.instagram.com/ars__notoria/",
+    otherLinks: [],
+    fbPageId: "",
+    igUserId: "",
+    bio: "We are Ars Notoria, a metal band based in Nicosia, Cyprus. Our music encompasses a fusion of different genres and unconventional vocal experimentation with Greek lyrics.",
+    manualStats: { facebookFollowers: 597, instagramFollowers: 952 }
   }
 ];
