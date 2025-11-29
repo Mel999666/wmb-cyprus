@@ -175,5 +175,21 @@ window.BANDS = [
     igUserId: "",
     bio: "We are Ars Notoria, a metal band based in Nicosia, Cyprus. Our music encompasses a fusion of different genres and unconventional vocal experimentation with Greek lyrics.",
     manualStats: { facebookFollowers: 597, instagramFollowers: 952 }
+  },
+  {
+    name: "House of Treason",
+    genre: "Heavy Metal",
+    city: "Nicosia",
+    youtube: "https://www.youtube.com/watch?v=f-sdfI9SF0g",
+    liveYoutube: "https://www.youtube.com/watch?v=XUZgDixnmWU&list=RDXUZgDixnmWU&start_radio=1",
+    facebookUrl: "https://www.facebook.com/share/1FgCJaVzpA/",
+    spotify: "https://open.spotify.com/artist/06ZWKUPleBQ0EBSxsgad32?si=YYc-wT1PRyubLqSf8fWLag",
+    spotifyEmbedTrack: "https://open.spotify.com/track/5ZtmertrcZaHPV4O9EG2av?si=e352e0c7cc594ad3",
+    instagramUrl: "https://www.instagram.com/houseoftreason/",
+    otherLinks: ["https://www.tiktok.com/@houseoftreason?is_from_webapp=1&sender_device=pc"],
+    fbPageId: "",
+    igUserId: "",
+    bio: "A band that transcends the limits of current trends to fuse genres within the vast umbrella of Metal music, while maintaining a classic metal texture to their sound. An unexpected creative spree has led to the band’s mass music production which was a decisive factor to the band’s path. House of Treason was formed in July 2024.",
+    manualStats: { facebookFollowers: 25, instagramFollowers: 494 }
   }
 ];
