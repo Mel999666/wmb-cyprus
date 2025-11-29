@@ -26,7 +26,7 @@ window.BANDS = [
     name: "Blynd",
     genre: "Melodic Death Metal",
     city: "Nicosia",
-    youtube: "https://www.youtube.com/watch?v=WWB__yACzhw&list=RDWWB__yACzhw&start_radio=1",
+    youtube: "https://www.youtube.com/watch?v=uVirgsDsaQ8",
     liveYoutube: "https://www.youtube.com/watch?v=pMBFb8RFJ_s",
     facebookUrl: "https://www.facebook.com/blyndmetal/",
     spotify: "https://open.spotify.com/artist/5CgHUnYxF7RGMsD5BYY0lP",
