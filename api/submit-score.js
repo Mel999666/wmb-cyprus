@@ -39,26 +39,28 @@ export default async function handler(req) {
     const judgekey = normalizeJudge(judgeRaw);
     if (!judgekey) return bad('Invalid judge name');
 
-    // Use the same Upstash creds as get-scores (write pair preferred)
+    // Upstash credentials (write mode)
     const { url, token } = chooseKvCreds('write');
     if (!url || !token) return bad('KV not configured', 500);
 
     const key = `wmb:scores:${judgekey}`;
     const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
-
-    // Single JSON encode, then URI-encode once for the path
     const valueJson = JSON.stringify(valueObj);
-    const upstashUrl =
-      `${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(valueJson)}`;
+
+    // Use POST with JSON body instead of putting value in the URL
+    const upstashUrl = `${url}/set/${encodeURIComponent(key)}`;
 
     let r;
     try {
       r = await fetch(upstashUrl, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ value: valueJson }),
       });
     } catch (err) {
-      // Network / fetch-level failure
       return bad(
         'KV request failed: ' + (err && err.message ? err.message : 'network error'),
         500
@@ -70,7 +72,7 @@ export default async function handler(req) {
     try {
       data = JSON.parse(text);
     } catch {
-      // Upstash sometimes returns HTML or plain text on error; ignore JSON parse failure
+      // Upstash may return plain text or HTML on error; ignore JSON parse failure
     }
 
     if (!r.ok || (data && data.error)) {
