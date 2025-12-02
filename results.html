@@ -263,19 +263,113 @@ function combineWithCounts(judgesObj){
   return rows;
 }
 
+/* ---------- build printable HTML for a single judge's card (admin view) ----- */
+function makePrintableHtml(judgeName, scores){
+  const rows = Object.entries(scores || {}).map(([band, s])=>{
+    const m = Number(s.m || 0);
+    const o = Number(s.o || 0);
+    const q = Number(s.q || 0);
+    const p = Number(s.p || 0);
+    const r = readiness({ m, o, q, p });
+    const c = (s.c || '').trim();
+    return { band, m, o, q, p, r, c };
+  }).sort((a,b)=> b.r - a.r);
+
+  const lines = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.band)}</td>
+      <td>${r.m}</td>
+      <td>${r.o}</td>
+      <td>${r.q}</td>
+      <td>${r.p}</td>
+      <td><b>${to2(r.r)}</b></td>
+      <td>${escapeHtml(r.c)}</td>
+    </tr>
+  `).join('');
+
+  return `
+<!doctype html><html><head><meta charset="utf-8">
+<title>WMB Scoring — ${escapeHtml(judgeName || '')}</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;padding:20px;color:#111}
+  h1{margin:0 0 6px}
+  .muted{color:#555}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+  thead th{background:#f3f3f3}
+</style></head><body>
+<h1>Wacken Metal Battle Cyprus — Judge sheet</h1>
+<div class="muted">Judge: ${escapeHtml(judgeName || '')}</div>
+<table>
+  <thead>
+    <tr>
+      <th>Band</th>
+      <th>M</th>
+      <th>O</th>
+      <th>Q</th>
+      <th>P</th>
+      <th>Readiness</th>
+      <th>Comments</th>
+    </tr>
+  </thead>
+  <tbody>${lines}</tbody>
+</table>
+<script>window.addEventListener('load',()=>{window.print();});<\/script>
+</body></html>`;
+}
+
+/* simple HTML escaping for printable view */
+function escapeHtml(s){
+  return String(s || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
 /* ------------------------------ render judges ------------------------------- */
 function renderJudges(entries){
   elJudgeCount.textContent = `Loaded ${entries.length} submission(s).`;
   elJudgesBody.innerHTML = entries.map(e=>{
     const d = e.ts ? new Date(e.ts).toLocaleString() : '';
     const bands = Object.keys(e.scores||{}).length;
+    const judgeKey = e.judgekey || '';
     return `<tr>
-      <td>${e.judge||e.judgekey}</td>
+      <td>${e.judge||judgeKey}</td>
       <td>${d}</td>
       <td>${bands} bands scored</td>
-      <td><button data-del="${e.judgekey}">Delete</button></td>
+      <td>
+        <button data-view="${judgeKey}">View card</button>
+        <button data-del="${judgeKey}">Delete</button>
+      </td>
     </tr>`;
   }).join('');
+
+  // bind view card
+  elJudgesBody.querySelectorAll('button[data-view]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const judgekey = btn.getAttribute('data-view');
+      const entry = entries.find(e => (e.judgekey || '') === judgekey);
+      if (!entry) {
+        alert('Could not find this judge submission.');
+        return;
+      }
+      const judgeName = entry.judge || entry.judgekey || judgekey;
+      const html = makePrintableHtml(judgeName, entry.scores || {});
+      const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (!w) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wmb_${judgekey}.html`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    };
+  });
 
   // bind delete
   elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
