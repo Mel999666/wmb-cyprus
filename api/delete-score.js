@@ -1,38 +1,83 @@
+// /api/delete-score.js
 export const config = { runtime: 'edge' };
 
-function bad(msg, code = 400){
+import { chooseKvCreds } from './_kv-helpers.js';
+
+function bad(msg, code = 400) {
   return new Response(JSON.stringify({ error: msg }), {
     status: code,
-    headers: { 'content-type': 'application/json' }
+    headers: { 'content-type': 'application/json' },
   });
 }
 
-export default async function handler(req){
-  try{
+export default async function handler(req) {
+  try {
     if (req.method !== 'POST') return bad('Use POST', 405);
 
     const body = await req.json();
     const password = String(body?.password || '');
     const judgekey = String(body?.judgekey || '');
 
-    const ok = !!(process.env.RESULTS_PASSWORD) && password === process.env.RESULTS_PASSWORD;
-    if (!ok) return bad('Unauthorized', 401);
+    // Same admin password check as results / kv tools
+    if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
+      return bad('Unauthorized', 401);
+    }
     if (!judgekey) return bad('Missing judgekey');
 
-    const url = (process.env.KV_REST_API_URL || '').trim();
-    const token = (process.env.KV_REST_API_TOKEN || '').trim();
-    if (!url || !token) return bad('KV not configured', 500);
+    // Use the SAME KV creds as submit-score / get-scores
+    const { url, token } = chooseKvCreds('write');
+    if (!url || !token) {
+      return bad(
+        `KV not configured. url="${url}", tokenPresent=${!!token}`,
+        500
+      );
+    }
 
     const key = `wmb:scores:${judgekey}`;
-    const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
-      method:'POST',
-      headers:{ Authorization: `Bearer ${token}` }
-    });
-    const data = await r.json();
-    if (!r.ok || data?.error) return bad(data?.error || 'KV delete failed', 500);
+    const fullUrl = `${url}/del/${encodeURIComponent(key)}`;
 
-    return new Response(JSON.stringify({ ok:true }), { status:200, headers:{'content-type':'application/json'} });
-  }catch{
-    return bad('Server error', 500);
+    let r;
+    let text;
+
+    try {
+      r = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      text = await r.text();
+    } catch (err) {
+      console.error('delete-score Upstash fetch error', err);
+      return bad(
+        `KV request failed for URL "${fullUrl}": ${err.message || String(err)}`,
+        500
+      );
+    }
+
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      // Non-JSON body is fine; we just keep raw text in case of error
+    }
+
+    if (!r.ok || (data && data.error)) {
+      console.error('delete-score Upstash error', {
+        status: r.status,
+        body: text,
+      });
+      return bad(
+        `KV delete failed (status ${r.status}): ${text || '[no body]'}`,
+        500
+      );
+    }
+
+    // Success
+    return new Response(JSON.stringify({ ok: true, key }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  } catch (e) {
+    console.error('delete-score handler error', e);
+    return bad(e?.stack || e?.message || 'Server error', 500);
   }
 }
