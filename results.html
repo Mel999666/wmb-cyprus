@@ -13,18 +13,10 @@
     --readiness-bg: rgba(179,18,31,.14);/* maroon wash */
   }
   *{box-sizing:border-box}
-  body{
-    margin:0;
-    background:#0a0a0b;
-    color:var(--text);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
-  }
+  body{margin:0;background:#0a0a0b;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
 
-  /* Header + nav (aligned with index/judge pages) */
   header{
-    position:sticky;
-    top:0;
-    z-index:50;
+    position:sticky;top:0;z-index:50;
     background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
     border-bottom:1px solid #231a1d;
     backdrop-filter:blur(8px);
@@ -34,17 +26,9 @@
   .site-title{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:.3px}
   .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
   .nav-btn{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background:#8f1220;
-    color:#fff;
-    border:1px solid #6b0c12;
-    padding:10px 16px;
-    border-radius:12px;
-    font-weight:400;
-    font-size:15px;
-    text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;
+    background:#8f1220;color:#fff;border:1px solid #6b0c12;
+    padding:8px 14px;border-radius:12px;font-size:14px;text-decoration:none;
   }
   .nav-btn:hover{filter:brightness(1.05)}
 
@@ -75,20 +59,19 @@
 </head>
 <body>
 <header>
-  <!-- Top nav bar -->
   <div class="container nav">
     <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
-    <div class="site-title">Wacken Metal Battle Cyprus</div>
-    <nav style="margin-left:auto;display:flex;gap:12px">
-      <a href="/judge.html" class="nav-btn">Judge scoring</a>
-      <a href="/live.html" class="nav-btn">Live voting</a>
-      <a href="/results.html" class="nav-btn">Admin / results</a>
+    <div class="site-title">Judging Results — Wacken Metal Battle Cyprus</div>
+    <nav style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="/judge.html" class="nav-btn">Online round form</a>
+      <a href="/results.html" class="nav-btn">Online results</a>
+      <a href="/live-judge.html" class="nav-btn">Live judge form</a>
+      <a href="/live.html" class="nav-btn">Live scoreboard</a>
     </nav>
   </div>
 
-  <!-- Existing title + password gate + CSV button -->
   <div class="container">
-    <h2 style="margin:0 0 8px">Judging Results — Wacken Metal Battle Cyprus</h2>
+    <h2 style="margin:0 0 8px">Online round results</h2>
 
     <!-- PASSWORD GATE -->
     <div id="gate" class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -251,7 +234,7 @@ function perJudgeRanking(scoresByBand){
 }
 
 /* --------- combine across judges, compute deciding metrics + counts --------- */
-/* FINAL ORDER: readiness-first, ranks only as tie-breakers */
+/* UPDATED: final ordering is readiness-first, ranks used only as tie-breakers */
 function combineWithCounts(judgesObj){
   const perJudge = {};
   for (const [judge, sheet] of Object.entries(judgesObj||{})) {
@@ -294,11 +277,12 @@ function combineWithCounts(judgesObj){
     });
   }
 
-  // readiness-highest first, then tie-break by ranks
+  // NEW: final ordering = highest average readiness first,
+  // using rank metrics only as tie-breakers.
   rows.sort((a,b)=>{
-    if (a.readiness  !== b.readiness ) return b.readiness  - a.readiness;
-    if (a.medianRank !== b.medianRank) return a.medianRank - b.medianRank;
-    if (a.avgRank    !== b.avgRank   ) return a.avgRank    - b.avgRank;
+    if (a.readiness  !== b.readiness ) return b.readiness  - a.readiness; // higher readiness = better
+    if (a.medianRank !== b.medianRank) return a.medianRank - b.medianRank; // then lower median rank
+    if (a.avgRank    !== b.avgRank   ) return a.avgRank    - b.avgRank;    // then lower average rank
     return a.band.localeCompare(b.band);
   });
 
@@ -482,6 +466,64 @@ function downloadCsv(judgesObj){
   const lines = [];
   lines.push(['judge','band','musicianship','originality','material_quality','online_presence','readiness'].join(','));
   for (const [judge, sheet] of Object.entries(judgesObj||{})) {
-    const scores = sheet?.scores || {}
+    const scores = sheet?.scores || {};
+    for (const [band, v] of Object.entries(scores)) {
+      const r = readiness(v);
+      lines.push([
+        `"${judge.replace(/"/g,'""')}"`,
+        `"${band.replace(/"/g,'""')}"`,
+        to2(v.m||0), to2(v.o||0), to2(v.q||0), to2(v.p||0), to2(r)
+      ].join(','));
+    }
+  }
+  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='wmb-results.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
 
-::contentReference[oaicite:0]{index=0}
+/* ---------------------------------- load ------------------------------------ */
+async function loadResults(){
+  elCsv.classList.add('hidden');
+  elCard.classList.add('hidden');
+  elJudgesCard.classList.add('hidden');
+  elExplainCard.classList.add('hidden');
+  elStat.textContent = 'Loading…';
+
+  const pwd = elPwd.value.trim();
+  const res = await fetch('/api/get-scores?__=' + Date.now(), {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body: JSON.stringify({ password: pwd })
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = 'Auth failed or server error.';
+    try { msg = JSON.parse(text).error || msg; } catch {}
+    alert(msg);
+    elStat.textContent = '';
+    return;
+  }
+
+  let data = {};
+  try { data = JSON.parse(text); } catch {}
+  const judges  = data.judges  || {};
+  const entries = data.entries || {};
+
+  // hide the gate after successful load
+  elGate.classList.add('hidden');
+  elStat.textContent = '';
+
+  renderResults(judges);
+  renderJudges(entries);
+
+  elCsv.classList.remove('hidden');
+  elCsv.onclick = () => downloadCsv(judges);
+  elJudgesCard.classList.remove('hidden');
+}
+
+elLoad.addEventListener('click', loadResults);
+</script>
+</body>
+</html>
