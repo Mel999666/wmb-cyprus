@@ -4,16 +4,40 @@
 // - UPSTASH_KV_REST_API_URL
 // - UPSTASH_KV_REST_API_TOKEN            (read/write token)
 // - UPSTASH_KV_REST_API_READ_ONLY_TOKEN  (read-only token)
+//
+// In your current setup, the active DB is also exposed as:
+// - WMBTEMP_KV_REST_API_URL
+// - WMBTEMP_KV_REST_API_TOKEN
+// - WMBTEMP_KV_REST_API_READ_ONLY_TOKEN
+//
+// This helper now looks at BOTH, so you don't have to fight with Vercel envs.
 
 /**
  * Pick the correct Upstash KV URL + token.
  * mode: 'read' or 'write'
  */
 export function chooseKvCreds(mode = 'read') {
-  const url = (process.env.UPSTASH_KV_REST_API_URL || '').trim();
+  // Try the “official” UPSTASH_KV_* names first,
+  // then fall back to the WMBTEMP_* ones,
+  // and finally to any legacy KV_REST_API_* / UPSTASH_KV_URL envs.
+  const url =
+    (process.env.UPSTASH_KV_REST_API_URL ||
+      process.env.WMBTEMP_KV_REST_API_URL ||
+      process.env.KV_REST_API_URL ||
+      process.env.UPSTASH_KV_URL ||
+      '').trim();
 
-  const rwToken = (process.env.UPSTASH_KV_REST_API_TOKEN || '').trim();
-  const roToken = (process.env.UPSTASH_KV_REST_API_READ_ONLY_TOKEN || '').trim();
+  const rwToken =
+    (process.env.UPSTASH_KV_REST_API_TOKEN ||
+      process.env.WMBTEMP_KV_REST_API_TOKEN ||
+      process.env.KV_REST_API_TOKEN ||
+      '').trim();
+
+  const roToken =
+    (process.env.UPSTASH_KV_REST_API_READ_ONLY_TOKEN ||
+      process.env.WMBTEMP_KV_REST_API_READ_ONLY_TOKEN ||
+      process.env.KV_REST_API_READ_ONLY_TOKEN ||
+      '').trim();
 
   let token = '';
 
