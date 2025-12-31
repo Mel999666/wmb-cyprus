@@ -19,12 +19,10 @@
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif
   }
 
-  /* Header / nav to match index.html */
+  /* header / nav */
   header{
-    position:sticky;
-    top:0;
-    z-index:50;
-    background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.65));
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
     border-bottom:1px solid #231a1d;
     backdrop-filter:blur(8px);
   }
@@ -33,17 +31,9 @@
   .site-title{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:.3px}
   .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
   .nav-btn{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background:var(--maroon-2);
-    color:#fff;
-    border:1px solid var(--maroon-border);
-    padding:10px 16px;
-    border-radius:12px;
-    font-weight:400;
-    font-size:15px;
-    text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;
+    background:#8f1220;color:#fff;border:1px solid #6b0c12;
+    padding:8px 14px;border-radius:12px;font-size:14px;text-decoration:none;
   }
   .nav-btn:hover{filter:brightness(1.05)}
 
@@ -134,15 +124,15 @@
 </style>
 </head>
 <body>
-  <!-- New header / nav -->
   <header>
     <div class="container nav">
       <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
       <div class="site-title">Wacken Metal Battle Cyprus</div>
-      <nav style="margin-left:auto;display:flex;gap:12px">
-        <a href="/judge.html" class="nav-btn">Judge scoring</a>
-        <a href="/live.html" class="nav-btn">Live voting</a>
-        <a href="/results.html" class="nav-btn">Admin / results</a>
+      <nav style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
+        <a href="/judge.html" class="nav-btn">Online round form</a>
+        <a href="/results.html" class="nav-btn">Online results</a>
+        <a href="/live-judge.html" class="nav-btn">Live judge form</a>
+        <a href="/live.html" class="nav-btn">Live scoreboard</a>
       </nav>
     </div>
   </header>
@@ -261,20 +251,20 @@
   }
 
   function openPanelFresh(){
-  sessionStorage.setItem(S_SCORES, JSON.stringify({}));
+    sessionStorage.setItem(S_SCORES, JSON.stringify({}));
 
-  // Remove the gate so it cannot reappear
-  if (gate && gate.parentNode) gate.parentNode.removeChild(gate);
+    // Remove the gate so it cannot reappear
+    if (gate && gate.parentNode) gate.parentNode.removeChild(gate);
 
-  panel.classList.remove('hidden');
-  rules.classList.remove('hidden');
+    panel.classList.remove('hidden');
+    rules.classList.remove('hidden');
 
-  nameTop.value = nameField.value || '';
-  nameTop.addEventListener('input',()=>sessionStorage.setItem(S_NAME,nameTop.value));
+    nameTop.value = nameField.value || '';
+    nameTop.addEventListener('input',()=>sessionStorage.setItem(S_NAME,nameTop.value));
 
-  initScoring(true);
-  initBackGuard();
-}
+    initScoring(true);
+    initBackGuard();
+  }
 
   document.getElementById('btnLogin').addEventListener('click', async ()=>{
     msg.textContent='Checking...';
@@ -541,7 +531,6 @@
         a.href = url; a.download = 'wmb_scoring.html';
         document.body.appendChild(a); a.click(); a.remove();
       }
-      // URL will be released by the new window on close
     };
 
     // Submit
