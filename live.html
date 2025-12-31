@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Live Results — Wacken Metal Battle Cyprus</title>
+<style>
+  :root{
+    --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb; --crimson:#b3121f;
+    --live-bg:#111016;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  header{position:sticky;top:0;background:#0d0b0d;border-bottom:1px solid #231a1d;z-index:10}
+  .container{max-width:1140px;margin:0 auto;padding:16px 20px}
+  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:14px;padding:16px;margin:18px 0}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
+  thead th{font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))}
+  .meta{color:var(--muted);font-size:13px}
+  .right{text-align:right}
+  .boldwhite{font-weight:800;color:#fff;font-size:18px}
+  .hidden{display:none}
+  button{background:#1a1416;border:1px solid #2b2023;color:#ffefe9;border-radius:10px;padding:8px 12px;cursor:pointer;font:inherit}
+  button.primary{background:#b3121f;border-color:#b3121f}
+  a.nav-link{color:var(--muted);text-decoration:none;font-size:13px}
+  a.nav-link[aria-current="page"]{color:#fff;font-weight:600}
+  .nav{display:flex;gap:12px;align-items:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <div>
+      <h2 style="margin:0 0 6px">Live Results — Wacken Metal Battle Cyprus</h2>
+      <div class="meta" id="liveStatus">Loading…</div>
+    </div>
+    <nav class="nav">
+      <!-- adjust hrefs to your actual filenames if needed -->
+      <a class="nav-link" href="/judge.html">Judge form</a>
+      <a class="nav-link" href="/results.html">Admin results</a>
+      <a class="nav-link" href="/live.html" aria-current="page">Live scoreboard</a>
+      <button id="btnRefresh" class="primary">Refresh now</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <!-- LIVE TABLE -->
+  <section id="liveCard" class="card hidden">
+    <div id="liveSummary" class="boldwhite" style="margin-bottom:10px"></div>
+    <div style="overflow:auto">
+      <table aria-label="Live results" id="tblLive">
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th class="right">Avg Tightness</th>
+            <th class="right">Avg Songwriting</th>
+            <th class="right">Avg Stage presence</th>
+            <th class="right">Avg Crowd engagement</th>
+            <th class="right">Avg live readiness</th>
+            <th class="right">Judges</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyLive"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- JUDGE SUBMISSIONS -->
+  <section id="judgesCard" class="card hidden">
+    <div class="h3" style="font-weight:700;margin:0 0 8px">Judge Submissions (live)</div>
+    <div class="meta" id="judgeCount"></div>
+    <div style="overflow:auto;margin-top:8px">
+      <table aria-label="Judge submissions" id="tblJudges">
+        <thead>
+          <tr><th>Judge</th><th>Date</th><th>Details</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="tbodyJudges"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ----------------------------- live weights ----------------------------- */
+const LIVE_WEIGHTS = { t:0.30, s:0.25, p:0.25, c:0.20 };
+
+const readinessLive = s =>
+  (Number(s.t||0)*LIVE_WEIGHTS.t) +
+  (Number(s.s||0)*LIVE_WEIGHTS.s) +
+  (Number(s.p||0)*LIVE_WEIGHTS.p) +
+  (Number(s.c||0)*LIVE_WEIGHTS.c);
+
+const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const to2 = n => Number(n || 0).toFixed(2);
+
+const elLiveCard   = document.getElementById('liveCard');
+const elLiveBody   = document.getElementById('tbodyLive');
+const elLiveSum    = document.getElementById('liveSummary');
+const elStatus     = document.getElementById('liveStatus');
+
+const elJudgesCard = document.getElementById('judgesCard');
+const elJudgesBody = document.getElementById('tbodyJudges');
+const elJudgeCount = document.getElementById('judgeCount');
+const elRefresh    = document.getElementById('btnRefresh');
+
+/* -------------------------- combine live scores ------------------------- */
+function combineLive(judgesObj){
+  const bands = new Set();
+
+  Object.values(judgesObj || {}).forEach(sheet=>{
+    Object.keys(sheet.scores || {}).forEach(b=>bands.add(b));
+  });
+
+  const rows = [];
+
+  for (const band of bands) {
+    const Ts=[], Ss=[], Ps=[], Cs=[], Rs=[];
+    let judgesCount = 0;
+
+    for (const sheet of Object.values(judgesObj || {})) {
+      const s = sheet.scores?.[band];
+      if (!s) continue;
+      const t = Number(s.t || 0);
+      const so = Number(s.s || 0);
+      const p = Number(s.p || 0);
+      const c = Number(s.c || 0);
+      const r = readinessLive({ t, s:so, p, c });
+
+      Ts.push(t); Ss.push(so); Ps.push(p); Cs.push(c); Rs.push(r);
+      judgesCount++;
+    }
+
+    rows.push({
+      band,
+      avgT: avg(Ts),
+      avgS: avg(Ss),
+      avgP: avg(Ps),
+      avgC: avg(Cs),
+      readiness: avg(Rs),
+      judges: judgesCount
+    });
+  }
+
+  // Sort: readiness desc, then Tightness desc, then Songwriting desc
+  rows.sort((a,b)=>{
+    if (b.readiness !== a.readiness) return b.readiness - a.readiness;
+    if (b.avgT     !== a.avgT)      return b.avgT     - a.avgT;
+    if (b.avgS     !== a.avgS)      return b.avgS     - a.avgS;
+    return 0; // true tie, keep as-is
+  });
+
+  return rows;
+}
+
+/* ------------------------- printable judge sheet ------------------------ */
+function escapeHtml(s){
+  return String(s || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function makePrintableHtml(judgeName, scores){
+  const rows = Object.entries(scores || {}).map(([band,s])=>{
+    const t = Number(s.t || 0);
+    const so = Number(s.s || 0);
+    const p = Number(s.p || 0);
+    const c = Number(s.c || 0);
+    const r = readinessLive({ t, s:so, p, c });
+    const comment = (s.comment || s.c || '').trim(); // optional, if you add one later
+    return { band, t, so, p, c, r, comment };
+  }).sort((a,b)=> b.r - a.r);
+
+  const lines = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.band)}</td>
+      <td>${r.t}</td>
+      <td>${r.so}</td>
+      <td>${r.p}</td>
+      <td>${r.c}</td>
+      <td><b>${to2(r.r)}</b></td>
+      <td>${escapeHtml(r.comment)}</td>
+    </tr>
+  `).join('');
+
+  return `
+<!doctype html><html><head><meta charset="utf-8">
+<title>WMB Live Scoring — ${escapeHtml(judgeName || '')}</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;padding:20px;color:#111}
+  h1{margin:0 0 6px}
+  .muted{color:#555}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+  thead th{background:#f3f3f3}
+</style></head><body>
+<h1>Wacken Metal Battle Cyprus — Live judge sheet</h1>
+<div class="muted">Judge: ${escapeHtml(judgeName || '')}</div>
+<table>
+  <thead>
+    <tr>
+      <th>Band</th>
+      <th>Tightness</th>
+      <th>Songwriting</th>
+      <th>Stage presence</th>
+      <th>Crowd engagement</th>
+      <th>Live readiness</th>
+      <th>Comments</th>
+    </tr>
+  </thead>
+  <tbody>${lines}</tbody>
+</table>
+<script>window.addEventListener('load',()=>{window.print();});<\/script>
+</body></html>`;
+}
+
+/* ----------------------------- render judges ---------------------------- */
+function renderJudges(entries){
+  elJudgeCount.textContent = `Loaded ${entries.length} submission(s).`;
+  elJudgesBody.innerHTML = entries.map(e=>{
+    const d = e.ts ? new Date(e.ts).toLocaleString() : '';
+    const bands = Object.keys(e.scores||{}).length;
+    const judgeKey = e.judgekey || '';
+    return `<tr>
+      <td>${e.judge||judgeKey}</td>
+      <td>${d}</td>
+      <td>${bands} bands scored</td>
+      <td>
+        <button data-view="${judgeKey}">View card</button>
+        <button data-del="${judgeKey}">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // View card
+  elJudgesBody.querySelectorAll('button[data-view]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const judgekey = btn.getAttribute('data-view');
+      const entry = entries.find(e => (e.judgekey || '') === judgekey);
+      if (!entry) {
+        alert('Could not find this judge submission.');
+        return;
+      }
+      const judgeName = entry.judge || entry.judgekey || judgekey;
+      const html = makePrintableHtml(judgeName, entry.scores || {});
+      const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (!w) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wmb_live_${judgekey}.html`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    };
+  });
+
+  // Delete
+  elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if (!confirm('Delete this judge submission?')) return;
+      const judgekey = btn.getAttribute('data-del');
+      const r = await fetch('/api/delete-live-score', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ judgekey })
+      });
+      const t = await r.text();
+      if (!r.ok) {
+        try { alert(JSON.parse(t).error) } catch { alert('Delete failed'); }
+        return;
+      }
+      loadLive(); // refresh
+    };
+  });
+
+  elJudgesCard.classList.remove('hidden');
+}
+
+/* ----------------------------- render live ------------------------------ */
+function renderLive(judgesObj){
+  const rows = combineLive(judgesObj);
+
+  elLiveBody.innerHTML = rows.map((r,idx)=>`
+    <tr>
+      <td>${idx+1}. ${r.band}</td>
+      <td class="right">${to2(r.avgT)}</td>
+      <td class="right">${to2(r.avgS)}</td>
+      <td class="right">${to2(r.avgP)}</td>
+      <td class="right">${to2(r.avgC)}</td>
+      <td class="right">${to2(r.readiness)}</td>
+      <td class="right">${r.judges}</td>
+    </tr>
+  `).join('');
+
+  elLiveSum.textContent = rows.length
+    ? `Top 6 by live scores: ${rows.slice(0,6).map(r=>r.band).join(', ')}.`
+    : 'No live scores submitted yet.';
+
+  elLiveCard.classList.remove('hidden');
+}
+
+/* ------------------------------ load live ------------------------------- */
+async function loadLive(){
+  try {
+    elStatus.textContent = 'Loading…';
+
+    const res = await fetch('/api/get-live-scores?__=' + Date.now(), {
+      method:'POST',
+      headers:{'content-type':'application/json'}
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = 'Server error loading live scores.';
+      try { msg = JSON.parse(text).error || msg; } catch {}
+      elStatus.textContent = msg;
+      alert(msg);
+      return;
+    }
+
+    let data = {};
+    try { data = JSON.parse(text); } catch {}
+    const judges  = data.judges  || {};
+    const entries = data.entries || [];
+
+    renderLive(judges);
+    renderJudges(entries);
+
+    const now = new Date();
+    elStatus.textContent = `Last updated ${now.toLocaleTimeString()}`;
+  } catch (e) {
+    console.error(e);
+    elStatus.textContent = 'Error loading live scores.';
+  }
+}
+
+elRefresh.addEventListener('click', loadLive);
+
+// auto-refresh every 5 seconds
+setInterval(loadLive, 5000);
+loadLive();
+</script>
+</body>
+</html>
