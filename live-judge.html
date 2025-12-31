@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Live Judge Form — Wacken Metal Battle Cyprus</title>
+<style>
+  :root{
+    --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb;
+    --line:#2b2023; --ring:rgba(255,90,31,.35);
+    --maroon-1:#a01624; --maroon-2:#8f1220; --maroon-border:#6b0c12;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#0d0b0d,#080708 65%);
+    color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  }
+
+  header{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
+    border-bottom:1px solid #231a1d;
+    backdrop-filter:blur(8px);
+  }
+  .container{max-width:900px;margin:0 auto;padding:16px 20px}
+  .nav{display:flex;align-items:center;gap:16px}
+  .site-title{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:.3px}
+  .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+  .nav-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#8f1220;color:#fff;border:1px solid #6b0c12;
+    padding:8px 14px;border-radius:12px;font-size:14px;text-decoration:none;
+  }
+  .nav-btn:hover{filter:brightness(1.05)}
+
+  .h1{font-size:clamp(20px,2.6vw,30px);font-weight:800;margin:0 0 6px}
+  .muted{color:var(--muted)}
+  .card{
+    background:linear-gradient(180deg,#181316,#110f10);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 18px 40px rgba(0,0,0,.45);
+    margin:18px 0;
+  }
+
+  .explainer{display:grid;gap:10px;margin:8px 0}
+  .ex-row{
+    display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;
+    background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)
+  }
+  .ex-row b{font-weight:700}
+
+  .band{
+    border:1px solid var(--line);border-radius:14px;background:#120f10;
+    margin-bottom:14px;overflow:hidden;
+  }
+  .band-head{
+    display:flex;justify-content:space-between;align-items:center;padding:12px 14px;
+    background:linear-gradient(180deg,rgba(179,18,31,.18),transparent)
+  }
+  .band-name{font-weight:800;font-size:18px}
+  .muted-small{color:var(--muted);font-size:13px}
+
+  .row{display:grid;gap:6px;margin:10px 0;padding:0 14px}
+  .row label{font-size:14px;font-weight:600}
+  .control{display:flex;gap:10px;align-items:center}
+  .control input[type=range]{width:100%}
+  .badge{
+    background:#1a1416;border:1px solid var(--line);border-radius:10px;
+    padding:6px 10px;min-width:48px;text-align:center
+  }
+
+  .readiness{
+    display:flex;justify-content:space-between;align-items:center;
+    margin:8px 14px 12px;border-top:1px solid var(--line);padding-top:8px;
+  }
+  .readiness b{font-size:16px}
+
+  textarea{
+    width:calc(100% - 28px);min-height:60px;resize:vertical;
+    background:#0f0d0e;border:1px solid var(--line);color:#fff;
+    border-radius:10px;padding:10px;margin:0 14px 12px;
+  }
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
+  thead th{
+    font-size:12px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;
+    background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08));
+  }
+
+  input[type=text]{
+    background:#0f0d0e;border:1px solid var(--line);
+    color:var(--text);padding:8px 10px;border-radius:10px;min-width:220px;
+  }
+
+  button{
+    background:#2a6b3a;border:none;color:#fff;padding:10px 14px;
+    border-radius:12px;cursor:pointer;font-size:14px;
+  }
+  button.secondary{background:#1a1416;border:1px solid var(--line)}
+  button.warn{background:#7a2626}
+
+  .bottom-actions{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+  }
+
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
+    <div class="site-title">Wacken Metal Battle Cyprus</div>
+    <nav style="margin-left:auto;display:flex;gap:10px">
+      <a href="/judge.html" class="nav-btn">Online round form</a>
+      <a href="/results.html" class="nav-btn">Online results</a>
+      <a href="/live-judge.html" class="nav-btn">Live judge form</a>
+      <a href="/live.html" class="nav-btn">Live scoreboard</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <h1 class="h1">Live Judge Form</h1>
+  <p class="muted">
+    This form is for the six finalists only. Score each band from 0–10 in every category.
+    Your live readiness score is calculated automatically.
+  </p>
+
+  <section class="card">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <label for="judgeNameLive" style="font-weight:600">Judge name</label>
+      <input id="judgeNameLive" type="text" placeholder="e.g. Maria K." autocomplete="name">
+      <span class="muted-small">Your name will be shown on the admin results page.</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:18px">Live criteria & weights</h2>
+    <div class="explainer">
+      <div class="ex-row">
+        <b>Tightness &amp; Musicianship – 30%</b>
+        <div>How well they play together: timing, precision, control, sound.</div>
+      </div>
+      <div class="ex-row">
+        <b>Songwriting &amp; Set Impact – 25%</b>
+        <div>Strength of the material as a live set: flow, dynamics, hooks, memorability.</div>
+      </div>
+      <div class="ex-row">
+        <b>Stage Presence &amp; Performance – 25%</b>
+        <div>Physical presence, energy, confidence, how they command the stage.</div>
+      </div>
+      <div class="ex-row">
+        <b>Crowd Engagement – 20%</b>
+        <div>How much they move the room: interaction, response, emotional impact.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="bandsWrap" class="card"></section>
+
+  <section id="rankCard" class="card hidden">
+    <h3 style="margin:0 0 8px">Your provisional live ranking</h3>
+    <div style="overflow:auto">
+      <table aria-label="Provisional live ranking">
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th>Live readiness</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card bottom-actions">
+    <button id="btnReset" class="warn">Reset all live scores</button>
+    <button id="btnDownload" class="secondary">Download your live scoring card</button>
+    <button id="btnSubmit">Submit live scores</button>
+  </section>
+</main>
+
+<script src="/bands.js?v=live1"></script>
+<script>
+  const FINALISTS = [
+    'Blynd',
+    'Guiltera',
+    'Speak In Whispers',
+    "Ka'aper",
+    'Salienzor',
+    'YMNKY!'
+  ];
+
+  const WEIGHTS = {
+    tight: 0.30,
+    song: 0.25,
+    stage: 0.25,
+    crowd: 0.20,
+  };
+
+  const S_KEY = 'wmb.live.scores';
+  const S_NAME = 'wmb.live.judge';
+
+  const nameInput = document.getElementById('judgeNameLive');
+  nameInput.value = sessionStorage.getItem(S_NAME) || '';
+  nameInput.addEventListener('input', () => {
+    sessionStorage.setItem(S_NAME, nameInput.value.trim());
+  });
+
+  function liveReadiness(s) {
+    const t = Number(s.tight || 0);
+    const so = Number(s.song || 0);
+    const st = Number(s.stage || 0);
+    const c = Number(s.crowd || 0);
+    return (t*WEIGHTS.tight + so*WEIGHTS.song + st*WEIGHTS.stage + c*WEIGHTS.crowd);
+  }
+
+  function to2(n){return Number(n||0).toFixed(2);}
+
+  function getSaved() {
+    try { return JSON.parse(sessionStorage.getItem(S_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function saveScores(d) {
+    sessionStorage.setItem(S_KEY, JSON.stringify(d||{}));
+  }
+
+  function esc(s){
+    return String(s||'')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function renderBands() {
+    const wrap = document.getElementById('bandsWrap');
+    const all = Array.isArray(window.BANDS) ? window.BANDS : [];
+    const byName = {};
+    all.forEach(b => { byName[b.name] = b; });
+
+    const saved = getSaved();
+    const cards = [];
+
+    FINALISTS.forEach(name => {
+      const band = byName[name] || { name };
+      const s = saved[name] || { tight:0, song:0, stage:0, crowd:0, note:'' };
+      const ready = liveReadiness(s);
+
+      cards.push(`
+        <article class="band" data-band="${esc(name)}">
+          <div class="band-head">
+            <div>
+              <div class="band-name">${esc(name)}</div>
+              <div class="muted-small">
+                ${esc(band.city || '')}${band.city && band.genre ? ' · ' : ''}${esc(band.genre || '')}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Tightness &amp; Musicianship</label>
+            <div class="control">
+              <input type="range" min="0" max="10" step="1" value="${s.tight}" data-k="tight">
+              <span class="badge" data-kv="tight">${s.tight}</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Songwriting &amp; Set Impact</label>
+            <div class="control">
+              <input type="range" min="0" max="10" step="1" value="${s.song}" data-k="song">
+              <span class="badge" data-kv="song">${s.song}</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Stage Presence &amp; Performance</label>
+            <div class="control">
+              <input type="range" min="0" max="10" step="1" value="${s.stage}" data-k="stage">
+              <span class="badge" data-kv="stage">${s.stage}</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Crowd Engagement</label>
+            <div class="control">
+              <input type="range" min="0" max="10" step="1" value="${s.crowd}" data-k="crowd">
+              <span class="badge" data-kv="crowd">${s.crowd}</span>
+            </div>
+          </div>
+
+          <div class="readiness">
+            <span class="muted-small">Live readiness</span>
+            <b data-ready>${to2(ready)}</b>
+          </div>
+
+          <div class="row">
+            <label>Comments</label>
+            <textarea data-k="note" placeholder="Optional notes (e.g. standout song, issues)">${esc(s.note||'')}</textarea>
+          </div>
+        </article>
+      `);
+    });
+
+    wrap.innerHTML = cards.join('');
+
+    const savedNow = getSaved();
+
+    wrap.querySelectorAll('.band').forEach(card => {
+      const name = card.getAttribute('data-band');
+      const s = savedNow[name] || (savedNow[name] = { tight:0, song:0, stage:0, crowd:0, note:'' });
+
+      card.querySelectorAll('input[type=range]').forEach(sl => {
+        sl.addEventListener('input', () => {
+          const k = sl.getAttribute('data-k');
+          s[k] = Number(sl.value);
+          card.querySelector(`[data-kv="${k}"]`).textContent = s[k];
+          card.querySelector('[data-ready]').textContent = to2(liveReadiness(s));
+          saveScores(savedNow);
+          renderRanking();
+        });
+      });
+
+      const ta = card.querySelector('textarea[data-k="note"]');
+      ta.addEventListener('input', () => {
+        s.note = ta.value;
+        saveScores(savedNow);
+      });
+    });
+
+    saveScores(savedNow);
+    renderRanking();
+  }
+
+  function renderRanking() {
+    const saved = getSaved();
+    const rows = FINALISTS.map(name => {
+      const s = saved[name] || {};
+      const r = liveReadiness(s);
+      return { band:name, r, note:(s.note||'').trim() };
+    });
+
+    const any = rows.some(x => x.r > 0);
+    const card = document.getElementById('rankCard');
+    const body = document.getElementById('rankBody');
+
+    if (!any) {
+      card.classList.add('hidden');
+      body.innerHTML = '';
+      return;
+    }
+
+    rows.sort((a,b) => b.r - a.r);
+
+    body.innerHTML = rows.map(r =>
+      `<tr><td>${esc(r.band)}</td><td>${to2(r.r)}</td><td>${esc(r.note)}</td></tr>`
+    ).join('');
+
+    card.classList.remove('hidden');
+  }
+
+  function makePrintableHtml() {
+    const saved = getSaved();
+    const judge = nameInput.value.trim() || 'Unknown judge';
+
+    const rows = FINALISTS.map(name => {
+      const s = saved[name] || {};
+      return {
+        name,
+        tight: s.tight|0,
+        song:  s.song|0,
+        stage: s.stage|0,
+        crowd: s.crowd|0,
+        r: to2(liveReadiness(s)),
+        note: (s.note||'').trim(),
+      };
+    }).sort((a,b)=>Number(b.r)-Number(a.r));
+
+    const lines = rows.map(r => `
+      <tr>
+        <td>${esc(r.name)}</td>
+        <td>${r.tight}</td>
+        <td>${r.song}</td>
+        <td>${r.stage}</td>
+        <td>${r.crowd}</td>
+        <td><b>${r.r}</b></td>
+        <td>${esc(r.note)}</td>
+      </tr>
+    `).join('');
+
+    return `
+<!doctype html><html><head><meta charset="utf-8">
+<title>Live scoring — ${esc(judge)}</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;padding:20px;color:#111}
+  h1{margin:0 0 6px}
+  .muted{color:#555}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+  thead th{background:#f3f3f3}
+</style></head><body>
+<h1>Wacken Metal Battle Cyprus — Live scoring</h1>
+<div class="muted">Judge: ${esc(judge)}</div>
+<table>
+  <thead>
+    <tr>
+      <th>Band</th>
+      <th>Tightness</th>
+      <th>Songwriting</th>
+      <th>Stage presence</th>
+      <th>Crowd engagement</th>
+      <th>Live readiness</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>${lines}</tbody>
+</table>
+<script>window.addEventListener('load',()=>{window.print();});<\/script>
+</body></html>`;
+  }
+
+  document.getElementById('btnReset').onclick = () => {
+    const blank = {};
+    FINALISTS.forEach(name => {
+      blank[name] = { tight:0, song:0, stage:0, crowd:0, note:'' };
+    });
+    saveScores(blank);
+    renderBands();
+  };
+
+  document.getElementById('btnDownload').onclick = () => {
+    const html = makePrintableHtml();
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) {
+      const a = document.createElement('a');
+      a.href = url; a.download = 'wmb_live_scoring.html';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+  };
+
+  document.getElementById('btnSubmit').onclick = async () => {
+    const judge = nameInput.value.trim();
+    if (!judge) {
+      alert('Please enter your name before submitting.');
+      return;
+    }
+    const scores = getSaved();
+    const res = await fetch('/api/submit-live-score', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ judge, scores })
+    });
+    if (!res.ok) {
+      let msg = 'Could not save your live scores.';
+      try { msg = (await res.json()).error || msg; } catch {}
+      alert(msg);
+      return;
+    }
+    alert('Live scores submitted. You can still adjust and submit again if needed.');
+  };
+
+  renderBands();
+</script>
+</body>
+</html>
