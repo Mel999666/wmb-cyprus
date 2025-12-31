@@ -10,7 +10,7 @@ function bad(msg, code = 400) {
   });
 }
 
-// Normalize judge name -> stable key, same as other system
+// Normalize judge name -> stable key
 function normalizeJudge(s) {
   return String(s || '')
     .toLowerCase()
@@ -28,7 +28,7 @@ export default async function handler(req) {
     const scores = body?.scores || {};
 
     if (!judgeRaw) return bad('Missing judge name');
-    if (typeof scores !== 'object') return bad('Invalid scores payload');
+    if (typeof scores !== 'object' || !scores) return bad('Invalid scores payload');
 
     const judgekey = normalizeJudge(judgeRaw);
     if (!judgekey) return bad('Invalid judge name');
@@ -41,9 +41,14 @@ export default async function handler(req) {
       );
     }
 
-    // Live scores use a separate prefix so they don’t clash with application scores
-    const key = `wmb:live:${judgekey}`;
-    const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
+    // We use a separate prefix from the original online-round scores
+    const key = `wmb:livescore:${judgekey}`;
+    const valueObj = {
+      judge: judgeRaw,
+      judgekey,
+      scores,          // { [bandName]: { tight, song, stage, crowd, note } }
+      ts: Date.now(),
+    };
     const json = JSON.stringify(valueObj);
     const encodedValue = encodeURIComponent(json);
 
@@ -70,7 +75,7 @@ export default async function handler(req) {
     try {
       data = text ? JSON.parse(text) : null;
     } catch {
-      // ignore non-JSON
+      // non-JSON body – ignore
     }
 
     if (!upstashRes.ok || (data && data.error)) {
