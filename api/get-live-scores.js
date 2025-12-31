@@ -10,7 +10,7 @@ function bad(msg, code = 400) {
   });
 }
 
-// Accept both URI-encoded JSON and plain JSON
+// Accept both plain JSON and URI-encoded JSON
 function safeParseValue(v) {
   if (v == null) return null;
   try {
@@ -26,6 +26,15 @@ export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
 
+    const body = await req.json();
+    const password = String(body?.password || '');
+    const debug = !!body?.debug;
+
+    // Same admin password as the original results page
+    if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
+      return bad('Unauthorized', 401);
+    }
+
     const { url, token } = chooseKvCreds('read');
     if (!url || !token) {
       return bad(
@@ -34,7 +43,7 @@ export default async function handler(req) {
       );
     }
 
-    const prefix = 'wmb:live:';
+    const prefix = 'wmb:livescore:';
     const matchPattern = `${prefix}*`;
 
     const keys = await scanAll(url, token, matchPattern, 200);
@@ -68,6 +77,21 @@ export default async function handler(req) {
     }
 
     const payload = { ok: true, count: entries.length, judges, entries };
+
+    if (debug) {
+      payload.debug = {
+        scannedPrefix: matchPattern,
+        scannedCount: keys.length,
+        urlHost: (() => {
+          try {
+            return new URL(url).host;
+          } catch {
+            return url;
+          }
+        })(),
+        scannedKeys: keys,
+      };
+    }
 
     return new Response(JSON.stringify(payload), {
       status: 200,
