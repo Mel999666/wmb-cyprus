@@ -1,4 +1,3 @@
-// /api/get-live-scores.js
 export const config = { runtime: 'edge' };
 
 import { chooseKvCreds, scanAll } from './_kv-helpers.js';
@@ -10,15 +9,10 @@ function bad(msg, code = 400) {
   });
 }
 
-// Accept both plain JSON and URI-encoded JSON
 function safeParseValue(v) {
   if (v == null) return null;
-  try {
-    return JSON.parse(decodeURIComponent(v));
-  } catch {}
-  try {
-    return JSON.parse(v);
-  } catch {}
+  try { return JSON.parse(decodeURIComponent(v)); } catch {}
+  try { return JSON.parse(v); } catch {}
   return null;
 }
 
@@ -30,31 +24,23 @@ export default async function handler(req) {
     const password = String(body?.password || '');
     const debug = !!body?.debug;
 
-    // Same admin password as the original results page
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
 
     const { url, token } = chooseKvCreds('read');
-    if (!url || !token) {
-      return bad(
-        `KV not configured. url="${url}", tokenPresent=${!!token}`,
-        500
-      );
-    }
+    if (!url || !token) return bad('KV not configured', 500);
 
-    const prefix = 'wmb:livescore:';
+    const prefix = 'wmb:livesub:';
     const matchPattern = `${prefix}*`;
 
     const keys = await scanAll(url, token, matchPattern, 200);
 
     const entries = [];
-
     for (const key of keys) {
-      const r = await fetch(
-        `${url}/get/${encodeURIComponent(key)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!r.ok) continue;
 
       const g = await r.json();
@@ -79,18 +65,7 @@ export default async function handler(req) {
     const payload = { ok: true, count: entries.length, judges, entries };
 
     if (debug) {
-      payload.debug = {
-        scannedPrefix: matchPattern,
-        scannedCount: keys.length,
-        urlHost: (() => {
-          try {
-            return new URL(url).host;
-          } catch {
-            return url;
-          }
-        })(),
-        scannedKeys: keys,
-      };
+      payload.debug = { scannedPrefix: matchPattern, scannedCount: keys.length, scannedKeys: keys };
     }
 
     return new Response(JSON.stringify(payload), {
