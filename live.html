@@ -15,7 +15,6 @@
     color:var(--text);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
   }
-
   header{
     position:sticky;top:0;z-index:50;
     background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
@@ -32,8 +31,6 @@
     padding:8px 14px;border-radius:12px;font-size:14px;text-decoration:none;
   }
   .nav-btn:hover{filter:brightness(1.05)}
-
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:13px}
 
   .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:14px;padding:16px;margin:18px 0}
   .meta{color:var(--muted);font-size:13px}
@@ -57,7 +54,7 @@
   <div class="container nav">
     <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
     <div class="site-title">Live Results — Wacken Metal Battle Cyprus</div>
-    <nav style="margin-left:auto;display:flex;gap:10px">
+    <nav style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
       <a href="/judge.html" class="nav-btn">Online round form</a>
       <a href="/results.html" class="nav-btn">Online results</a>
       <a href="/live-judge.html" class="nav-btn">Live judge form</a>
@@ -72,13 +69,13 @@
     <div style="margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <input id="adminPwd" type="password" placeholder="Admin / results password" autocomplete="current-password">
       <button id="btnLoad" class="primary">Refresh now</button>
+      <button id="btnClear" class="danger">Clear live scores</button>
       <span id="status" class="meta"></span>
     </div>
   </div>
 </header>
 
 <main class="container">
-  <!-- MAIN LIVE RESULTS -->
   <section id="resultsCard" class="card hidden">
     <div id="summary" class="boldwhite" style="margin-bottom:10px"></div>
     <div style="overflow:auto">
@@ -99,7 +96,6 @@
     </div>
   </section>
 
-  <!-- JUDGE SUBMISSIONS -->
   <section id="judgesCard" class="card hidden">
     <div class="h3" style="font-weight:700;margin:0 0 8px">Live judge submissions</div>
     <div class="meta" id="judgeCount"></div>
@@ -121,18 +117,14 @@
     'Speak In Whispers',
     "Ka'aper",
     'Salienzor',
-    'YMNKY!'
+    'YMNKY'
   ];
 
-  const WEIGHTS = {
-    tight: 0.30,
-    song: 0.25,
-    stage: 0.25,
-    crowd: 0.20,
-  };
+  const WEIGHTS = { tight: 0.30, song: 0.25, stage: 0.25, crowd: 0.20 };
 
   const elPwd   = document.getElementById('adminPwd');
   const elLoad  = document.getElementById('btnLoad');
+  const elClear = document.getElementById('btnClear');
   const elStat  = document.getElementById('status');
   const elLast  = document.getElementById('lastUpdated');
 
@@ -161,6 +153,15 @@
       .replace(/'/g,'&#39;');
   }
 
+  function getBandScore(scoresObj, band){
+    if (!scoresObj) return null;
+    const a = scoresObj[band];
+    if (a) return a;
+    if (band === 'YMNKY' && scoresObj['YMNKY!']) return scoresObj['YMNKY!'];
+    if (band === 'YMNKY!' && scoresObj['YMNKY']) return scoresObj['YMNKY'];
+    return null;
+  }
+
   function combineLiveResults(judgesObj){
     const rows = [];
 
@@ -169,7 +170,7 @@
       let judgesCount = 0;
 
       for (const sheet of Object.values(judgesObj || {})) {
-        const s = sheet.scores?.[band];
+        const s = getBandScore(sheet.scores || {}, band);
         if (!s) continue;
         judgesCount++;
         tightArr.push(Number(s.tight || 0));
@@ -205,7 +206,7 @@
 
     elBody.innerHTML = rows.map((r,idx)=>`
       <tr>
-        <td>${idx+1}. ${r.band}</td>
+        <td>${idx+1}. ${escapeHtml(r.band)}</td>
         <td class="right">${to2(r.tight)}</td>
         <td class="right">${to2(r.song)}</td>
         <td class="right">${to2(r.stage)}</td>
@@ -225,7 +226,7 @@
 
   function makePrintableHtml(judgeName, scores){
     const rows = FINALISTS.map(name => {
-      const s = scores[name] || {};
+      const s = getBandScore(scores || {}, name) || {};
       return {
         name,
         tight: s.tight|0,
@@ -282,17 +283,19 @@
 
   function renderJudges(entries){
     elJudgeCount.textContent = `Loaded ${entries.length} live submission(s).`;
+
     elJudgesBody.innerHTML = entries.map(e=>{
       const d = e.ts ? new Date(e.ts).toLocaleString() : '';
       const bands = Object.keys(e.scores||{}).length;
-      const judgeKey = e.judgekey || '';
+      const judgeLabel = e.judge || e.judgekey || '';
+      const kvkey = e.kvkey || '';
       return `<tr>
-        <td>${e.judge||judgeKey}</td>
-        <td>${d}</td>
+        <td>${escapeHtml(judgeLabel)}</td>
+        <td>${escapeHtml(d)}</td>
         <td>${bands} bands scored</td>
         <td>
-          <button data-view="${judgeKey}">View card</button>
-          <button data-del="${judgeKey}" class="danger">Delete</button>
+          <button data-view="${escapeHtml(e.judgekey || '')}">View card</button>
+          <button data-del="${escapeHtml(kvkey)}" class="danger">Delete</button>
         </td>
       </tr>`;
     }).join('');
@@ -324,19 +327,25 @@
     elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
       btn.onclick = async ()=>{
         if (!confirm('Delete this live judge submission?')) return;
-        const judgekey = btn.getAttribute('data-del');
+
+        const kvkey = btn.getAttribute('data-del') || '';
+        if (!kvkey.startsWith('wmb:livescore:')) {
+          alert('Refusing to delete non-live key.');
+          return;
+        }
+
         const pwd = elPwd.value.trim();
         const r = await fetch('/api/delete-live-score', {
           method:'POST',
           headers:{'content-type':'application/json'},
-          body: JSON.stringify({ password: pwd, judgekey })
+          body: JSON.stringify({ password: pwd, kvkey })
         });
         const t = await r.text();
         if (!r.ok) {
           try{ alert(JSON.parse(t).error); }catch{ alert('Delete failed'); }
           return;
         }
-        loadLiveResults(); // refresh
+        loadLiveResults();
       };
     });
 
@@ -366,8 +375,9 @@
 
     let data = {};
     try { data = JSON.parse(text); } catch {}
+
     const judges  = data.judges  || {};
-    const entries = data.entries || [];
+    const entries = Array.isArray(data.entries) ? data.entries : [];
 
     renderLiveTable(judges);
     renderJudges(entries);
@@ -377,6 +387,27 @@
   }
 
   elLoad.addEventListener('click', loadLiveResults);
+
+  elClear.addEventListener('click', async ()=>{
+    if (!confirm('This will delete ALL live scorecards and live drafts. Online results are not affected. Continue?')) return;
+
+    const pwd = elPwd.value.trim();
+    const r = await fetch('/api/clear-live-scores', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ password: pwd, alsoDrafts: true })
+    });
+
+    const text = await r.text();
+    if (!r.ok) {
+      let msg = 'Clear failed.';
+      try { msg = JSON.parse(text).error || msg; } catch {}
+      alert(msg);
+      return;
+    }
+
+    loadLiveResults();
+  });
 </script>
 </body>
 </html>
