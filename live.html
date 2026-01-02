@@ -15,6 +15,7 @@
     color:var(--text);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
   }
+
   header{
     position:sticky;top:0;z-index:50;
     background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
@@ -39,7 +40,7 @@
   .boldwhite{font-weight:800;color:#fff;font-size:18px}
 
   input,button{font:inherit}
-  input[type=password]{background:#120f10;border:1px solid #2b2023;border-radius:10px;color:var(--text);padding:8px 10px;min-width:220px}
+  input[type=password]{background:#120f10;border:1px solid #2b2023;border-radius:10px;color:var(--text);padding:8px 10px;min-width:240px}
   button{background:#1a1416;border:1px solid #2b2023;color:#ffefe9;border-radius:10px;padding:8px 12px;cursor:pointer}
   button.primary{background:#b3121f;border-color:#b3121f}
   button.danger{background:#7a2626;border-color:#7a2626}
@@ -97,7 +98,7 @@
   </section>
 
   <section id="judgesCard" class="card hidden">
-    <div class="h3" style="font-weight:700;margin:0 0 8px">Live judge submissions</div>
+    <div style="font-weight:700;margin:0 0 8px">Live judge submissions</div>
     <div class="meta" id="judgeCount"></div>
     <div style="overflow:auto;margin-top:8px">
       <table aria-label="Judge submissions" id="tblJudges">
@@ -117,7 +118,7 @@
     'Speak In Whispers',
     "Ka'aper",
     'Salienzor',
-    'YMNKY'
+    'YMNKY!'
   ];
 
   const WEIGHTS = { tight: 0.30, song: 0.25, stage: 0.25, crowd: 0.20 };
@@ -153,24 +154,15 @@
       .replace(/'/g,'&#39;');
   }
 
-  function getBandScore(scoresObj, band){
-    if (!scoresObj) return null;
-    const a = scoresObj[band];
-    if (a) return a;
-    if (band === 'YMNKY' && scoresObj['YMNKY!']) return scoresObj['YMNKY!'];
-    if (band === 'YMNKY!' && scoresObj['YMNKY']) return scoresObj['YMNKY'];
-    return null;
-  }
-
-  function combineLiveResults(judgesObj){
+  function combineLiveResults(entries){
     const rows = [];
 
     FINALISTS.forEach(band => {
       const tightArr = [], songArr = [], stageArr = [], crowdArr = [], readyArr = [];
       let judgesCount = 0;
 
-      for (const sheet of Object.values(judgesObj || {})) {
-        const s = getBandScore(sheet.scores || {}, band);
+      for (const entry of entries || []) {
+        const s = entry.scores?.[band];
         if (!s) continue;
         judgesCount++;
         tightArr.push(Number(s.tight || 0));
@@ -201,12 +193,12 @@
     return rows;
   }
 
-  function renderLiveTable(judgesObj){
-    const rows = combineLiveResults(judgesObj);
+  function renderLiveTable(entries){
+    const rows = combineLiveResults(entries);
 
     elBody.innerHTML = rows.map((r,idx)=>`
       <tr>
-        <td>${idx+1}. ${escapeHtml(r.band)}</td>
+        <td>${idx+1}. ${r.band}</td>
         <td class="right">${to2(r.tight)}</td>
         <td class="right">${to2(r.song)}</td>
         <td class="right">${to2(r.stage)}</td>
@@ -226,7 +218,7 @@
 
   function makePrintableHtml(judgeName, scores){
     const rows = FINALISTS.map(name => {
-      const s = getBandScore(scores || {}, name) || {};
+      const s = scores[name] || {};
       return {
         name,
         tight: s.tight|0,
@@ -283,35 +275,29 @@
 
   function renderJudges(entries){
     elJudgeCount.textContent = `Loaded ${entries.length} live submission(s).`;
-
-    // IMPORTANT: encode kvkey so spaces do not break the attribute
     elJudgesBody.innerHTML = entries.map(e=>{
       const d = e.ts ? new Date(e.ts).toLocaleString() : '';
       const bands = Object.keys(e.scores||{}).length;
-      const judgeLabel = e.judge || e.judgekey || '';
-      const kvkey = e.kvkey || '';
-      const kvEnc = encodeURIComponent(kvkey);
-      const judgekeyEnc = encodeURIComponent(e.judgekey || '');
       return `<tr>
-        <td>${escapeHtml(judgeLabel)}</td>
+        <td>${escapeHtml(e.judge || e.judgekey || '')}</td>
         <td>${escapeHtml(d)}</td>
         <td>${bands} bands scored</td>
         <td>
-          <button data-view="${judgekeyEnc}">View card</button>
-          <button data-del="${kvEnc}" class="danger">Delete</button>
+          <button data-view="${escapeHtml(e.key)}">View card</button>
+          <button data-del="${escapeHtml(e.key)}" class="danger">Delete</button>
         </td>
       </tr>`;
     }).join('');
 
     elJudgesBody.querySelectorAll('button[data-view]').forEach(btn=>{
       btn.onclick = ()=>{
-        const judgekey = decodeURIComponent(btn.getAttribute('data-view') || '');
-        const entry = entries.find(e => (e.judgekey || '') === judgekey);
+        const key = btn.getAttribute('data-view');
+        const entry = entries.find(e => e.key === key);
         if (!entry) {
           alert('Could not find this judge submission.');
           return;
         }
-        const judgeName = entry.judge || entry.judgekey || judgekey;
+        const judgeName = entry.judge || entry.judgekey || '';
         const html = makePrintableHtml(judgeName, entry.scores || {});
         const blob = new Blob([html], {type:'text/html;charset=utf-8'});
         const url = URL.createObjectURL(blob);
@@ -319,7 +305,7 @@
         if (!w) {
           const a = document.createElement('a');
           a.href = url;
-          a.download = `wmb_live_${judgekey}.html`;
+          a.download = `wmb_live_${(entry.judgekey||'judge')}.html`;
           document.body.appendChild(a);
           a.click();
           a.remove();
@@ -330,19 +316,15 @@
     elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
       btn.onclick = async ()=>{
         if (!confirm('Delete this live judge submission?')) return;
-
-        const kvkey = decodeURIComponent(btn.getAttribute('data-del') || '');
-        if (!kvkey.startsWith('wmb:livescore:')) {
-          alert('Refusing to delete non-live key.');
-          return;
-        }
-
+        const key = btn.getAttribute('data-del');
         const pwd = elPwd.value.trim();
+
         const r = await fetch('/api/delete-live-score', {
           method:'POST',
           headers:{'content-type':'application/json'},
-          body: JSON.stringify({ password: pwd, kvkey })
+          body: JSON.stringify({ password: pwd, key })
         });
+
         const t = await r.text();
         if (!r.ok) {
           try{ alert(JSON.parse(t).error); }catch{ alert('Delete failed'); }
@@ -378,11 +360,9 @@
 
     let data = {};
     try { data = JSON.parse(text); } catch {}
+    const entries = data.entries || [];
 
-    const judges  = data.judges  || {};
-    const entries = Array.isArray(data.entries) ? data.entries : [];
-
-    renderLiveTable(judges);
+    renderLiveTable(entries);
     renderJudges(entries);
 
     elStat.textContent = '';
@@ -392,23 +372,20 @@
   elLoad.addEventListener('click', loadLiveResults);
 
   elClear.addEventListener('click', async ()=>{
-    if (!confirm('This will delete ALL live scorecards and live drafts. Online results are not affected. Continue?')) return;
-
     const pwd = elPwd.value.trim();
+    if (!pwd) { alert('Enter admin password first.'); return; }
+    if (!confirm('Clear ALL live scores and drafts? This does not touch online results.')) return;
+
     const r = await fetch('/api/clear-live-scores', {
       method:'POST',
       headers:{'content-type':'application/json'},
-      body: JSON.stringify({ password: pwd, alsoDrafts: true })
+      body: JSON.stringify({ password: pwd })
     });
-
-    const text = await r.text();
+    const t = await r.text();
     if (!r.ok) {
-      let msg = 'Clear failed.';
-      try { msg = JSON.parse(text).error || msg; } catch {}
-      alert(msg);
+      try { alert(JSON.parse(t).error || 'Clear failed'); } catch { alert('Clear failed'); }
       return;
     }
-
     loadLiveResults();
   });
 </script>
