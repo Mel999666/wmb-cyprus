@@ -284,25 +284,28 @@
   function renderJudges(entries){
     elJudgeCount.textContent = `Loaded ${entries.length} live submission(s).`;
 
+    // IMPORTANT: encode kvkey so spaces do not break the attribute
     elJudgesBody.innerHTML = entries.map(e=>{
       const d = e.ts ? new Date(e.ts).toLocaleString() : '';
       const bands = Object.keys(e.scores||{}).length;
       const judgeLabel = e.judge || e.judgekey || '';
       const kvkey = e.kvkey || '';
+      const kvEnc = encodeURIComponent(kvkey);
+      const judgekeyEnc = encodeURIComponent(e.judgekey || '');
       return `<tr>
         <td>${escapeHtml(judgeLabel)}</td>
         <td>${escapeHtml(d)}</td>
         <td>${bands} bands scored</td>
         <td>
-          <button data-view="${escapeHtml(e.judgekey || '')}">View card</button>
-          <button data-del="${escapeHtml(kvkey)}" class="danger">Delete</button>
+          <button data-view="${judgekeyEnc}">View card</button>
+          <button data-del="${kvEnc}" class="danger">Delete</button>
         </td>
       </tr>`;
     }).join('');
 
     elJudgesBody.querySelectorAll('button[data-view]').forEach(btn=>{
       btn.onclick = ()=>{
-        const judgekey = btn.getAttribute('data-view');
+        const judgekey = decodeURIComponent(btn.getAttribute('data-view') || '');
         const entry = entries.find(e => (e.judgekey || '') === judgekey);
         if (!entry) {
           alert('Could not find this judge submission.');
@@ -328,7 +331,7 @@
       btn.onclick = async ()=>{
         if (!confirm('Delete this live judge submission?')) return;
 
-        const kvkey = btn.getAttribute('data-del') || '';
+        const kvkey = decodeURIComponent(btn.getAttribute('data-del') || '');
         if (!kvkey.startsWith('wmb:livescore:')) {
           alert('Refusing to delete non-live key.');
           return;
