@@ -1,4 +1,3 @@
-// /api/delete-live-score.js
 export const config = { runtime: 'edge' };
 
 import { chooseKvCreds } from './_kv-helpers.js';
@@ -24,37 +23,19 @@ export default async function handler(req) {
     if (!judgekey) return bad('Missing judge key');
 
     const { url, token } = chooseKvCreds('write');
-    if (!url || !token) {
-      return bad(
-        `KV not configured. url="${url}", tokenPresent=${!!token}`,
-        500
-      );
-    }
+    if (!url || !token) return bad('KV not configured', 500);
 
-    const key = `wmb:livescore:${judgekey}`;
+    const key = `wmb:livesub:${judgekey}`;
     const fullUrl = `${url}/del/${encodeURIComponent(key)}`;
 
-    let upstashRes;
-    let text;
-    try {
-      upstashRes = await fetch(fullUrl, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      text = await upstashRes.text();
-    } catch (err) {
-      console.error('delete-live-score Upstash fetch error', err);
-      return bad(
-        `KV request failed for URL "${fullUrl}": ${err.message || String(err)}`,
-        500
-      );
-    }
+    const upstashRes = await fetch(fullUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
+    const text = await upstashRes.text();
     if (!upstashRes.ok) {
-      return bad(
-        `KV delete failed (status ${upstashRes.status}): ${text || '[no body]'}`,
-        500
-      );
+      return bad(`KV delete failed (status ${upstashRes.status}): ${text || '[no body]'}`, 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
