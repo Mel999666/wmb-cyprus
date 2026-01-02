@@ -17,7 +17,6 @@
     color:var(--text);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
   }
-
   header{
     position:sticky;top:0;z-index:50;
     background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
@@ -45,7 +44,6 @@
     box-shadow:0 18px 40px rgba(0,0,0,.45);
     margin:18px 0;
   }
-
   .explainer{display:grid;gap:10px;margin:8px 0}
   .ex-row{
     display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;
@@ -108,23 +106,16 @@
     display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;
   }
 
-  .hidden{display:none}
-
   .statusline{
-    margin-left:auto;
-    display:flex;
-    gap:10px;
-    align-items:center;
-    flex-wrap:wrap;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:8px;color:var(--muted);font-size:13px;
   }
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:6px 10px;border-radius:999px;
-    background:#1a1416;border:1px solid var(--line);
-    color:var(--muted);font-size:13px
-  }
-  .pill.ok{border-color:#2a6b3a;background:#16331e;color:#b8f0c8}
-  .pill.bad{border-color:#7a2626;background:#2a1515;color:#ffd0d0}
+  .dot{width:10px;height:10px;border-radius:999px;background:#333;display:inline-block}
+  .dot.ok{background:#2a6b3a}
+  .dot.warn{background:#a06b16}
+  .dot.bad{background:#7a2626}
+
+  .hidden{display:none}
 </style>
 </head>
 <body>
@@ -144,7 +135,7 @@
 <main class="container">
   <h1 class="h1">Live Judge Form</h1>
   <p class="muted">
-    This form is for the six finalists only. Score each band from 0–10 in every category.
+    This form is for the six finalists only. Score each band from 0 to 10 in every category.
     Your live readiness score is calculated automatically.
   </p>
 
@@ -152,26 +143,28 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <label for="judgeNameLive" style="font-weight:600">Judge name</label>
       <input id="judgeNameLive" type="text" placeholder="e.g. Maria K." autocomplete="name">
-      <div class="statusline">
-        <span id="savePill" class="pill">Not saved yet</span>
-        <span class="muted-small">Autosaves while you score (no submit needed).</span>
-      </div>
+      <span class="muted-small">Your name is used to save your draft while you score.</span>
+    </div>
+    <div class="statusline">
+      <span class="dot" id="saveDot"></span>
+      <span id="saveText">Enter your name to start autosaving.</span>
+      <span id="saveWhen"></span>
     </div>
   </section>
 
   <section class="card">
-    <h2 style="margin:0 0 8px;font-size:18px">Live criteria & weights</h2>
+    <h2 style="margin:0 0 8px;font-size:18px">Live criteria and weights</h2>
     <div class="explainer">
       <div class="ex-row">
-        <b>Tightness &amp; Musicianship – 30%</b>
+        <b>Tightness and Musicianship – 30%</b>
         <div>How well they play together: timing, precision, control, sound.</div>
       </div>
       <div class="ex-row">
-        <b>Songwriting &amp; Set Impact – 25%</b>
+        <b>Songwriting and Set Impact – 25%</b>
         <div>Strength of the material as a live set: flow, dynamics, hooks, memorability.</div>
       </div>
       <div class="ex-row">
-        <b>Stage Presence &amp; Performance – 25%</b>
+        <b>Stage Presence and Performance – 25%</b>
         <div>Physical presence, energy, confidence, how they command the stage.</div>
       </div>
       <div class="ex-row">
@@ -206,7 +199,7 @@
   </section>
 </main>
 
-<script src="/bands.js?v=live1"></script>
+<script src="/bands.js?v=live2"></script>
 <script>
   const FINALISTS = [
     'Blynd',
@@ -214,30 +207,23 @@
     'Speak In Whispers',
     "Ka'aper",
     'Salienzor',
-    'YMNKY!'
+    'YMNKY' // we also accept YMNKY! when reading
   ];
 
-  const WEIGHTS = {
-    tight: 0.30,
-    song: 0.25,
-    stage: 0.25,
-    crowd: 0.20,
-  };
+  const WEIGHTS = { tight: 0.30, song: 0.25, stage: 0.25, crowd: 0.20 };
 
-  const S_KEY  = 'wmb.live.scores';
-  const S_NAME = 'wmb.live.judge';
+  const elDot = document.getElementById('saveDot');
+  const elSaveText = document.getElementById('saveText');
+  const elSaveWhen = document.getElementById('saveWhen');
 
   const nameInput = document.getElementById('judgeNameLive');
-  const savePill  = document.getElementById('savePill');
 
-  let autosaveTimer = null;
-  let lastAutosaveAt = 0;
-  let autosaveInFlight = false;
-
-  function setPill(text, cls){
-    savePill.textContent = text;
-    savePill.classList.remove('ok','bad');
-    if (cls) savePill.classList.add(cls);
+  function normalizeJudge(s) {
+    return String(s || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s]+/g, '')
+      .replace(/\s+/g, ' ');
   }
 
   function liveReadiness(s) {
@@ -247,16 +233,7 @@
     const c = Number(s.crowd || 0);
     return (t*WEIGHTS.tight + so*WEIGHTS.song + st*WEIGHTS.stage + c*WEIGHTS.crowd);
   }
-
-  function to2(n){return Number(n||0).toFixed(2);}
-
-  function getSaved() {
-    try { return JSON.parse(sessionStorage.getItem(S_KEY) || '{}'); }
-    catch { return {}; }
-  }
-  function saveLocal(d) {
-    sessionStorage.setItem(S_KEY, JSON.stringify(d||{}));
-  }
+  function to2(n){ return Number(n||0).toFixed(2); }
 
   function esc(s){
     return String(s||'')
@@ -267,89 +244,140 @@
       .replace(/'/g,'&#39;');
   }
 
-  async function fetchExistingDraft(judge){
-    try{
-      const r = await fetch('/api/get-live-draft', {
+  function canonicalBandKey(band){
+    // keep existing stored keys compatible with YMNKY!
+    if (band === 'YMNKY') return 'YMNKY';
+    return band;
+  }
+  function getBandScore(scoresObj, band){
+    if (!scoresObj) return null;
+    const a = scoresObj[band];
+    if (a) return a;
+    // Try alt key for YMNKY
+    if (band === 'YMNKY' && scoresObj['YMNKY!']) return scoresObj['YMNKY!'];
+    if (band === 'YMNKY!' && scoresObj['YMNKY']) return scoresObj['YMNKY'];
+    return null;
+  }
+
+  function storageKeyForJudge(judgekey){
+    return `wmb.live.scores.${judgekey || 'anon'}`;
+  }
+
+  function getLocalSaved(judgekey) {
+    try { return JSON.parse(sessionStorage.getItem(storageKeyForJudge(judgekey)) || '{}'); }
+    catch { return {}; }
+  }
+
+  function setLocalSaved(judgekey, data) {
+    sessionStorage.setItem(storageKeyForJudge(judgekey), JSON.stringify(data || {}));
+  }
+
+  function setSaveState(kind, msg, whenTs){
+    elDot.className = 'dot';
+    if (kind === 'ok') elDot.classList.add('ok');
+    if (kind === 'warn') elDot.classList.add('warn');
+    if (kind === 'bad') elDot.classList.add('bad');
+    elSaveText.textContent = msg || '';
+    elSaveWhen.textContent = whenTs ? `Last save: ${new Date(whenTs).toLocaleTimeString()}` : '';
+  }
+
+  // -------- autosave draft (debounced) ----------
+  let saveTimer = null;
+  let lastSavedTs = 0;
+
+  async function saveDraftNow() {
+    const judgeRaw = nameInput.value.trim();
+    const judgekey = normalizeJudge(judgeRaw);
+    if (!judgekey) {
+      setSaveState('warn', 'Enter your name to start autosaving.', 0);
+      return;
+    }
+
+    const scores = getLocalSaved(judgekey);
+
+    setSaveState('warn', 'Saving draft…', lastSavedTs || 0);
+
+    try {
+      const res = await fetch('/api/submit-live-draft', {
         method:'POST',
         headers:{'content-type':'application/json'},
-        body: JSON.stringify({ judge })
+        body: JSON.stringify({ judge: judgeRaw, scores })
       });
-      const data = await r.json().catch(()=>null);
-      if (!r.ok || !data || !data.ok) return null;
-      if (!data.found) return null;
-      return data.draft || null;
-    }catch{
+      const text = await res.text();
+
+      if (!res.ok) {
+        let msg = 'Draft save failed.';
+        try { msg = JSON.parse(text).error || msg; } catch {}
+        setSaveState('bad', msg, lastSavedTs || 0);
+        return;
+      }
+
+      lastSavedTs = Date.now();
+      setSaveState('ok', 'Draft saved.', lastSavedTs);
+    } catch (e) {
+      setSaveState('bad', 'Draft save failed (network).', lastSavedTs || 0);
+    }
+  }
+
+  function scheduleDraftSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDraftNow, 650);
+  }
+
+  // -------- load draft from server for judge ----------
+  async function loadDraftForJudge(judgeRaw){
+    const judgekey = normalizeJudge(judgeRaw);
+    if (!judgekey) return null;
+
+    try {
+      const res = await fetch('/api/get-live-draft', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ judge: judgeRaw })
+      });
+      const text = await res.text();
+      if (!res.ok) return null;
+
+      const data = JSON.parse(text || '{}');
+      if (!data || !data.ok) return null;
+
+      return {
+        judge: data.judge || judgeRaw,
+        judgekey: data.judgekey || judgekey,
+        scores: data.scores || {},
+        ts: Number(data.ts) || 0
+      };
+    } catch {
       return null;
     }
   }
 
-  function scheduleAutosave(){
-    const judge = nameInput.value.trim();
-    if (!judge) {
-      setPill('Enter your name to autosave', '');
-      return;
-    }
-
-    if (autosaveTimer) clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(() => doAutosave(false), 700);
-  }
-
-  async function doAutosave(force){
-    const judge = nameInput.value.trim();
-    if (!judge) return;
-
-    const now = Date.now();
-    if (!force && now - lastAutosaveAt < 600) return;
-    if (autosaveInFlight) return;
-
-    autosaveInFlight = true;
-    setPill('Saving…', '');
-
-    const scores = getSaved();
-
-    try{
-      const r = await fetch('/api/save-live-draft', {
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body: JSON.stringify({ judge, scores })
-      });
-
-      if (!r.ok) {
-        let msg = 'Save failed';
-        try { msg = (await r.json()).error || msg; } catch {}
-        setPill(msg, 'bad');
-        autosaveInFlight = false;
-        return;
-      }
-
-      lastAutosaveAt = Date.now();
-      setPill('Saved', 'ok');
-    }catch{
-      setPill('Save failed', 'bad');
-    }finally{
-      autosaveInFlight = false;
-    }
-  }
-
+  // -------- render ----------
   function renderBands() {
+    const judgeRaw = nameInput.value.trim();
+    const judgekey = normalizeJudge(judgeRaw);
+
     const wrap = document.getElementById('bandsWrap');
     const all = Array.isArray(window.BANDS) ? window.BANDS : [];
     const byName = {};
     all.forEach(b => { byName[b.name] = b; });
 
-    const saved = getSaved();
+    const saved = getLocalSaved(judgekey);
     const cards = [];
 
-    FINALISTS.forEach(name => {
-      const band = byName[name] || { name };
-      const s = saved[name] || { tight:0, song:0, stage:0, crowd:0, note:'' };
+    FINALISTS.forEach(displayName => {
+      const name = canonicalBandKey(displayName);
+      const band = byName[name] || byName[displayName] || { name: displayName };
+      const s0 = getBandScore(saved, displayName) || getBandScore(saved, name) || { tight:0, song:0, stage:0, crowd:0, note:'' };
+      const s = { tight: s0.tight||0, song:s0.song||0, stage:s0.stage||0, crowd:s0.crowd||0, note:s0.note||'' };
+
       const ready = liveReadiness(s);
 
       cards.push(`
-        <article class="band" data-band="${esc(name)}">
+        <article class="band" data-band="${esc(displayName)}">
           <div class="band-head">
             <div>
-              <div class="band-name">${esc(name)}</div>
+              <div class="band-name">${esc(displayName)}</div>
               <div class="muted-small">
                 ${esc(band.city || '')}${band.city && band.genre ? ' · ' : ''}${esc(band.genre || '')}
               </div>
@@ -357,34 +385,34 @@
           </div>
 
           <div class="row">
-            <label>Tightness &amp; Musicianship</label>
+            <label>Tightness and Musicianship</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.tight}" data-k="tight">
-              <span class="badge" data-kv="tight">${s.tight}</span>
+              <input type="range" min="0" max="10" step="1" value="${Number(s.tight)||0}" data-k="tight">
+              <span class="badge" data-kv="tight">${Number(s.tight)||0}</span>
             </div>
           </div>
 
           <div class="row">
-            <label>Songwriting &amp; Set Impact</label>
+            <label>Songwriting and Set Impact</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.song}" data-k="song">
-              <span class="badge" data-kv="song">${s.song}</span>
+              <input type="range" min="0" max="10" step="1" value="${Number(s.song)||0}" data-k="song">
+              <span class="badge" data-kv="song">${Number(s.song)||0}</span>
             </div>
           </div>
 
           <div class="row">
-            <label>Stage Presence &amp; Performance</label>
+            <label>Stage Presence and Performance</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.stage}" data-k="stage">
-              <span class="badge" data-kv="stage">${s.stage}</span>
+              <input type="range" min="0" max="10" step="1" value="${Number(s.stage)||0}" data-k="stage">
+              <span class="badge" data-kv="stage">${Number(s.stage)||0}</span>
             </div>
           </div>
 
           <div class="row">
             <label>Crowd Engagement</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${s.crowd}" data-k="crowd">
-              <span class="badge" data-kv="crowd">${s.crowd}</span>
+              <input type="range" min="0" max="10" step="1" value="${Number(s.crowd)||0}" data-k="crowd">
+              <span class="badge" data-kv="crowd">${Number(s.crowd)||0}</span>
             </div>
           </div>
 
@@ -395,7 +423,7 @@
 
           <div class="row">
             <label>Comments</label>
-            <textarea data-k="note" placeholder="Optional notes (e.g. standout song, issues)">${esc(s.note||'')}</textarea>
+            <textarea data-k="note" placeholder="Optional notes">${esc(s.note||'')}</textarea>
           </div>
         </article>
       `);
@@ -403,40 +431,59 @@
 
     wrap.innerHTML = cards.join('');
 
-    const savedNow = getSaved();
-
+    // bind events
     wrap.querySelectorAll('.band').forEach(card => {
-      const name = card.getAttribute('data-band');
-      const s = savedNow[name] || (savedNow[name] = { tight:0, song:0, stage:0, crowd:0, note:'' });
+      const bandName = card.getAttribute('data-band');
+      const judgeRawNow = nameInput.value.trim();
+      const judgekeyNow = normalizeJudge(judgeRawNow);
+
+      // Ensure object exists
+      const savedNow = getLocalSaved(judgekeyNow);
+      const current = getBandScore(savedNow, bandName) || { tight:0, song:0, stage:0, crowd:0, note:'' };
+      savedNow[bandName] = current;
+      setLocalSaved(judgekeyNow, savedNow);
 
       card.querySelectorAll('input[type=range]').forEach(sl => {
         sl.addEventListener('input', () => {
+          const judgekey2 = normalizeJudge(nameInput.value.trim());
+          const saved2 = getLocalSaved(judgekey2);
+          const s = saved2[bandName] || (saved2[bandName] = { tight:0, song:0, stage:0, crowd:0, note:'' });
+
           const k = sl.getAttribute('data-k');
           s[k] = Number(sl.value);
+
           card.querySelector(`[data-kv="${k}"]`).textContent = s[k];
           card.querySelector('[data-ready]').textContent = to2(liveReadiness(s));
-          saveLocal(savedNow);
+
+          setLocalSaved(judgekey2, saved2);
           renderRanking();
-          scheduleAutosave();
+
+          scheduleDraftSave();
         });
       });
 
       const ta = card.querySelector('textarea[data-k="note"]');
       ta.addEventListener('input', () => {
+        const judgekey2 = normalizeJudge(nameInput.value.trim());
+        const saved2 = getLocalSaved(judgekey2);
+        const s = saved2[bandName] || (saved2[bandName] = { tight:0, song:0, stage:0, crowd:0, note:'' });
+
         s.note = ta.value;
-        saveLocal(savedNow);
-        scheduleAutosave();
+
+        setLocalSaved(judgekey2, saved2);
+        scheduleDraftSave();
       });
     });
 
-    saveLocal(savedNow);
     renderRanking();
   }
 
   function renderRanking() {
-    const saved = getSaved();
+    const judgekey = normalizeJudge(nameInput.value.trim());
+    const saved = getLocalSaved(judgekey);
+
     const rows = FINALISTS.map(name => {
-      const s = saved[name] || {};
+      const s = getBandScore(saved, name) || {};
       const r = liveReadiness(s);
       return { band:name, r, note:(s.note||'').trim() };
     });
@@ -461,11 +508,12 @@
   }
 
   function makePrintableHtml() {
-    const saved = getSaved();
     const judge = nameInput.value.trim() || 'Unknown judge';
+    const judgekey = normalizeJudge(judge);
+    const saved = getLocalSaved(judgekey);
 
     const rows = FINALISTS.map(name => {
-      const s = saved[name] || {};
+      const s = getBandScore(saved, name) || {};
       return {
         name,
         tight: s.tight|0,
@@ -520,15 +568,23 @@
 </body></html>`;
   }
 
+  // -------- buttons ----------
   document.getElementById('btnReset').onclick = async () => {
+    const judgeRaw = nameInput.value.trim();
+    const judgekey = normalizeJudge(judgeRaw);
+    if (!judgekey) {
+      alert('Enter your name first, then reset.');
+      return;
+    }
+
     const blank = {};
     FINALISTS.forEach(name => {
       blank[name] = { tight:0, song:0, stage:0, crowd:0, note:'' };
     });
-    saveLocal(blank);
+
+    setLocalSaved(judgekey, blank);
     renderBands();
-    scheduleAutosave();
-    await doAutosave(true);
+    scheduleDraftSave();
   };
 
   document.getElementById('btnDownload').onclick = () => {
@@ -545,12 +601,25 @@
 
   document.getElementById('btnSubmit').onclick = async () => {
     const judge = nameInput.value.trim();
-    if (!judge) {
+    const judgekey = normalizeJudge(judge);
+
+    if (!judgekey) {
       alert('Please enter your name before submitting.');
       return;
     }
 
-    const scores = getSaved();
+    const scores = getLocalSaved(judgekey);
+
+    // Basic sanity: at least one non-zero score
+    let any = false;
+    for (const b of FINALISTS) {
+      const s = getBandScore(scores, b) || {};
+      if ((s.tight||0) + (s.song||0) + (s.stage||0) + (s.crowd||0) > 0) { any = true; break; }
+    }
+    if (!any) {
+      alert('No scores detected yet.');
+      return;
+    }
 
     const res = await fetch('/api/submit-live-score', {
       method:'POST',
@@ -558,67 +627,65 @@
       body: JSON.stringify({ judge, scores })
     });
 
+    const text = await res.text();
     if (!res.ok) {
-      let msg = 'Could not submit your live scores.';
-      try { msg = (await res.json()).error || msg; } catch {}
+      let msg = 'Could not save your live scores.';
+      try { msg = JSON.parse(text).error || msg; } catch {}
       alert(msg);
       return;
     }
 
-    setPill('Submitted', 'ok');
+    lastSavedTs = Date.now();
+    setSaveState('ok', 'Submitted live scores. Your draft is now finalized.', lastSavedTs);
     alert('Live scores submitted.');
   };
 
-  // Load name from session, then try to pull draft from server for that name
-  (async function init(){
-    nameInput.value = sessionStorage.getItem(S_NAME) || '';
+  // -------- judge name behavior ----------
+  let lastJudgekey = '';
 
-    nameInput.addEventListener('input', async () => {
-      const v = nameInput.value.trim();
-      sessionStorage.setItem(S_NAME, v);
+  async function onJudgeNameChange() {
+    const judgeRaw = nameInput.value.trim();
+    const judgekey = normalizeJudge(judgeRaw);
 
-      if (!v) {
-        setPill('Enter your name to autosave', '');
-        return;
-      }
-
-      setPill('Checking saved draft…', '');
-      const draft = await fetchExistingDraft(v);
-
-      if (draft && draft.scores && typeof draft.scores === 'object') {
-        saveLocal(draft.scores);
-        setPill('Loaded your saved draft', 'ok');
-      } else {
-        setPill('Autosave ready', 'ok');
-      }
-
-      renderBands();
-    });
-
-    if (!nameInput.value.trim()) {
-      setPill('Enter your name to autosave', '');
-      renderBands();
+    if (!judgekey) {
+      lastJudgekey = '';
+      setSaveState('warn', 'Enter your name to start autosaving.', 0);
+      document.getElementById('bandsWrap').innerHTML = '';
+      document.getElementById('rankCard').classList.add('hidden');
       return;
     }
 
-    setPill('Checking saved draft…', '');
-    const draft = await fetchExistingDraft(nameInput.value.trim());
-    if (draft && draft.scores && typeof draft.scores === 'object') {
-      saveLocal(draft.scores);
-      setPill('Loaded your saved draft', 'ok');
+    if (judgekey === lastJudgekey) return;
+    lastJudgekey = judgekey;
+
+    setSaveState('warn', 'Checking for existing draft…', 0);
+
+    // Load server draft if exists
+    const draft = await loadDraftForJudge(judgeRaw);
+
+    if (draft && draft.scores && Object.keys(draft.scores).length) {
+      setLocalSaved(judgekey, draft.scores);
+      setSaveState('ok', 'Draft loaded.', draft.ts || Date.now());
     } else {
-      setPill('Autosave ready', 'ok');
+      // If local exists, use it, otherwise init empty
+      const local = getLocalSaved(judgekey);
+      if (!local || !Object.keys(local).length) {
+        const blank = {};
+        FINALISTS.forEach(n => blank[n] = { tight:0, song:0, stage:0, crowd:0, note:'' });
+        setLocalSaved(judgekey, blank);
+      }
+      setSaveState('ok', 'Draft ready.', 0);
     }
 
     renderBands();
-  })();
+    scheduleDraftSave();
+  }
 
-  window.addEventListener('beforeunload', () => {
-    try {
-      const judge = nameInput.value.trim();
-      if (judge) navigator.sendBeacon('/api/save-live-draft', JSON.stringify({ judge, scores: getSaved() }));
-    } catch {}
-  });
+  nameInput.addEventListener('change', onJudgeNameChange);
+  nameInput.addEventListener('blur', onJudgeNameChange);
+
+  // Start empty until name entered
+  setSaveState('warn', 'Enter your name to start autosaving.', 0);
 </script>
 </body>
 </html>
