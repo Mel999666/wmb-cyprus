@@ -10,7 +10,6 @@ function bad(msg, code = 400) {
   });
 }
 
-// Normalize judge name -> stable key
 function normalizeJudge(s) {
   return String(s || '')
     .toLowerCase()
@@ -35,15 +34,12 @@ export default async function handler(req) {
 
     const { url, token } = chooseKvCreds('write');
     if (!url || !token) {
-      return bad(
-        `KV not configured. url="${url}", tokenPresent=${!!token}`,
-        500
-      );
+      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    const key = `wmb:livescore:${judgekey}`;
+    // FINAL live submission key (overwrite by judgekey)
+    const key = `wmb:live:${judgekey}`;
     const valueObj = {
-      schema: 'live1',
       judge: judgeRaw,
       judgekey,
       scores, // { [bandName]: { tight, song, stage, crowd, note } }
@@ -52,20 +48,27 @@ export default async function handler(req) {
 
     const json = JSON.stringify(valueObj);
     const encodedValue = encodeURIComponent(json);
-    const fullUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
+    const setUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
 
-    const upstashRes = await fetch(fullUrl, {
+    const upstashRes = await fetch(setUrl, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
     const text = await upstashRes.text();
 
-    if (!upstashRes.ok) {
-      return bad(
-        `KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`,
-        500
-      );
+    let data;
+    try { data = text ? JSON.parse(text) : null; } catch {}
+
+    if (!upstashRes.ok || (data && data.error)) {
+      return bad(`KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`, 500);
     }
+
+    // Optional: delete draft for this judge if it exists
+    const draftKey = `wmb:live_draft:${judgekey}`;
+    await fetch(`${url}/del/${encodeURIComponent(draftKey)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(()=>{});
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
