@@ -1,3 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Judging Results — Wacken Metal Battle Cyprus</title>
+<style>
+  :root{
+    --bg:#0a0a0b; --panel:#151215; --text:#f2f2f2; --muted:#b8b6bb; --crimson:#b3121f;
+    /* callout backgrounds for the 3 deciding columns */
+    --median-bg: rgba(255,180,0,.10);   /* warm amber */
+    --avgrank-bg: rgba(64,160,255,.12); /* calm blue */
+    --readiness-bg: rgba(179,18,31,.14);/* maroon wash */
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:#0a0a0b;
+    color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  }
+
+  header{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
+    border-bottom:1px solid #231a1d;
+    backdrop-filter:blur(8px);
+  }
+  .container{max-width:1140px;margin:0 auto;padding:16px 20px}
+  .nav{display:flex;align-items:center;gap:16px}
+  .site-title{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:.3px}
+  .logo{width:84px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+  .nav-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#8f1220;color:#fff;border:1px solid #6b0c12;
+    padding:8px 14px;border-radius:12px;font-size:14px;text-decoration:none;
+  }
+  .nav-btn:hover{filter:brightness(1.05)}
+
+  .card{background:linear-gradient(180deg,#181316,#110f10);border:1px solid #2b2023;border-radius:14px;padding:16px;margin:18px 0}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#1a1416;border:1px solid #2b2023;color:var(--muted);font-size:13px}
+  input,button{font:inherit}
+  input[type=password]{background:#120f10;border:1px solid #2b2023;border-radius:10px;color:var(--text);padding:10px 12px;min-width:260px}
+  button{background:#1a1416;border:1px solid #2b2023;color:#ffefe9;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button.primary{background:#b3121f;border-color:#b3121f}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px 12px;border-bottom:1px solid #2b2023}
+  thead th{font-size:13px;text-transform:uppercase;letter-spacing:.35px;color:#ffefe9;background:linear-gradient(180deg,rgba(179,18,31,.22),rgba(139,15,23,.08))}
+  .meta{color:var(--muted);font-size:13px}
+  .right{text-align:right}
+  .hidden{display:none}
+  .boldwhite{font-weight:800;color:#fff;font-size:18px}
+
+  /* Make the deciding columns pop (both header and cells) */
+  th.col-median,     td.col-median{background:var(--median-bg)}
+  th.col-avgrank,    td.col-avgrank{background:var(--avgrank-bg)}
+  th.col-readiness,  td.col-readiness{background:var(--readiness-bg);font-weight:800}
+
+  /* Explanation table small notes */
+  .note{color:var(--muted);font-size:12px}
+  .tag{display:inline-block;border:1px solid #2b2023;border-radius:999px;padding:2px 8px;font-size:12px;background:#1a1416}
+  .tag.ok{border-color:#2a6b3a;background:#16331e;color:#b8f0c8}
+</style>
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <img class="logo" src="/public/wmb-logo.png?v=2" alt="Wacken Metal Battle Cyprus logo">
+    <div class="site-title">Wacken Metal Battle Cyprus</div>
+    <nav style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="/judge.html" class="nav-btn">Online round form</a>
+      <a href="/results.html" class="nav-btn">Online results</a>
+      <a href="/live-judge.html" class="nav-btn">Live judge form</a>
+      <a href="/live.html" class="nav-btn">Live scoreboard</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <h2 style="margin:0 0 8px">Judging Results — Wacken Metal Battle Cyprus</h2>
+    <h3 style="margin:0 0 12px;font-weight:500">Online round results</h3>
+
+    <!-- PASSWORD GATE -->
+    <div id="gate" class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input id="adminPwd" type="password" autocomplete="current-password" placeholder="Admin / results password" />
+      <button id="btnLoad" class="primary">Load results</button>
+      <span id="status" class="meta"></span>
+    </div>
+
+    <!-- CSV button only after load -->
+    <div style="display:flex;justify-content:flex-end">
+      <button id="btnCsv" class="hidden">Download Combined CSV</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- MAIN RESULTS -->
+  <section id="resultsCard" class="card hidden">
+    <div id="summary" class="boldwhite" style="margin-bottom:10px"></div>
+    <div style="overflow:auto">
+      <table aria-label="Results table" id="tbl">
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th class="right">Avg Musician­ship</th>
+            <th class="right">Avg Originality</th>
+            <th class="right">Avg Material</th>
+            <th class="right">Avg Presence</th>
+
+            <!-- the 3 deciding columns at the end, before Judges -->
+            <th class="right col-median">Median rank</th>
+            <th class="right col-avgrank">Avg rank</th>
+            <th class="right col-readiness">Avg readiness</th>
+            <th class="right">Judges</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- JUDGE SUBMISSIONS -->
+  <section id="judgesCard" class="card hidden">
+    <div class="h3" style="font-weight:700;margin:0 0 8px">Judge Submissions</div>
+    <div class="meta" id="judgeCount"></div>
+    <div style="overflow:auto;margin-top:8px">
+      <table aria-label="Judge submissions" id="tblJudges">
+        <thead>
+          <tr><th>Judge</th><th>Date</th><th>Details</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="tbodyJudges"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- EXPLANATION TEXT -->
+  <section class="card" id="how-card">
+    <div class="h3" style="font-weight:700;margin:0 0 10px">How these results are calculated</div>
+    <ul>
+      <li>Each judge scores every band in four categories:</li>
+      <ul>
+        <li>Musicianship (40%)</li>
+        <li>Originality (25%)</li>
+        <li>Material quality (20%)</li>
+        <li>Stage or online presence (15%)</li>
+      </ul>
+      <li>These percentages are combined into a single readiness score for each band per judge.</li>
+
+      <li><b>Step 1: Normalizing scores</b> — Judges vary in how strict or generous they are, so we also convert scores into ranks.
+      Each judge’s favourite band gets rank 1, the next gets rank 2, and so on. This ensures every judge’s opinion carries equal weight.</li>
+
+      <li><b>Step 2: Combining ranks across judges</b> — From these per-judge rankings we calculate:</li>
+      <ul>
+        <li><b>Median rank</b> (the middle value) — main measure of shared consensus.</li>
+        <li><b>Average rank</b> — used as a secondary measure of consistency.</li>
+        <li><b>Average readiness</b> — the weighted score based on the four categories above.</li>
+      </ul>
+      <li>Lower ranks indicate stronger overall placement; higher readiness means stronger overall performance.</li>
+
+      <li><b>Step 3: Guardrails</b> — Two additional checks ensure both consensus and standout passion are respected:</li>
+      <ul>
+        <li><b>Consensus rule:</b> If a band appears in the top 6 of at least three judges, they outrank bands that do not.</li>
+        <li><b>Passion rule:</b> If a band is ranked 1st or 2nd by at least three judges, they are guaranteed a top-6 position.</li>
+      </ul>
+
+      <li><b>Step 4: Final order</b> — Bands are ordered using the following hierarchy:</li>
+      <ul>
+        <li><b>Average readiness</b> (highest first)</li>
+        <li>Median rank (used as a tie-breaker)</li>
+        <li>Average rank (secondary tie-breaker)</li>
+        <li>Guardrail eligibility (if triggered)</li>
+      </ul>
+
+      <li>This method puts overall readiness at the centre, while still balancing collective agreement and standout performances, and keeping the process transparent and fair.</li>
+    </ul>
+  </section>
+
+  <!-- EXPLANATION TABLE -->
+  <section id="explainCard" class="card hidden">
+    <div class="h3" style="font-weight:700;margin:0 0 10px">Explanation table</div>
+    <div class="note" style="margin:-6px 0 10px">
+      Shows the three deciding metrics per band plus how many judges put them in the Top-6 or Top-2.
+      “Eligible” means a guardrail could apply (your current ordering is readiness-first; this is for transparency).
+    </div>
+    <div style="overflow:auto">
+      <table aria-label="Explanation table" id="tblExplain">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Band</th>
+            <th class="right col-median">Median rank</th>
+            <th class="right col-avgrank">Avg rank</th>
+            <th class="right col-readiness">Avg readiness</th>
+            <th class="right">Top-6 votes</th>
+            <th class="right">Top-2 votes</th>
+            <th>Guardrail eligibility</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyExplain"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
 <script>
 /* --------------------------------- weights --------------------------------- */
 const WEIGHTS = { m:0.40, o:0.25, q:0.20, p:0.15 };
@@ -47,7 +251,7 @@ const readiness = s => {
 
 /* ---------- rank each judge’s sheet (1 = best within that judge) ----------- */
 function perJudgeRanking(scoresByBand){
-  const entries = Object.entries(scoresByBand || {}).map(([band,s]) => ({
+  const entries = Object.entries(scoresByBand || {}).map(([band,s])=>({
     band,
     r: readiness(s || {}),
   }));
@@ -58,7 +262,6 @@ function perJudgeRanking(scoresByBand){
 }
 
 /* --------- combine across judges, compute deciding metrics + counts --------- */
-/* Final ordering is readiness-first; ranks are tie-breakers and for explanation */
 function combineWithCounts(judgesObj){
   const perJudge = {};
   for (const [judge, sheet] of Object.entries(judgesObj || {})) {
@@ -88,11 +291,7 @@ function combineWithCounts(judgesObj){
       if (rnk<=6) top6++;
       if (rnk<=2) top2++;
 
-      Ms.push(s.m);
-      Os.push(s.o);
-      Qs.push(s.q);
-      Ps.push(s.p);
-      Rs.push(readiness(s));
+      Ms.push(s.m); Os.push(s.o); Qs.push(s.q); Ps.push(s.p); Rs.push(readiness(s));
     }
 
     const med = ranks.length ? ranks.slice().sort(byNum)[Math.floor((ranks.length-1)/2)] : 0;
@@ -113,9 +312,9 @@ function combineWithCounts(judgesObj){
   // final ordering = highest average readiness first,
   // using rank metrics only as tie-breakers.
   rows.sort((a,b)=>{
-    if (a.readiness  !== b.readiness ) return b.readiness  - a.readiness; // higher readiness = better
-    if (a.medianRank !== b.medianRank) return a.medianRank - b.medianRank; // then lower median rank
-    if (a.avgRank    !== b.avgRank   ) return a.avgRank    - b.avgRank;    // then lower average rank
+    if (a.readiness  !== b.readiness ) return b.readiness  - a.readiness;
+    if (a.medianRank !== b.medianRank) return a.medianRank - b.medianRank;
+    if (a.avgRank    !== b.avgRank   ) return a.avgRank    - b.avgRank;
     return a.band.localeCompare(b.band);
   });
 
@@ -131,8 +330,8 @@ function makePrintableHtml(judgeName, scores){
     return { band, ...c, r, cmt };
   }).sort((a,b)=> b.r - a.r);
 
-  const lines = rows.map(r =>
-    `<tr>
+  const lines = rows.map(r => `
+    <tr>
       <td>${escapeHtml(r.band)}</td>
       <td>${r.m}</td>
       <td>${r.o}</td>
@@ -140,8 +339,8 @@ function makePrintableHtml(judgeName, scores){
       <td>${r.p}</td>
       <td><b>${to2(r.r)}</b></td>
       <td>${escapeHtml(r.cmt)}</td>
-    </tr>`
-  ).join('');
+    </tr>
+  `).join('');
 
   return `
 <!doctype html><html><head><meta charset="utf-8">
@@ -239,7 +438,10 @@ function renderJudges(entries){
         body: JSON.stringify({ password: pwd, judgekey })
       });
       const t = await r.text();
-      if (!r.ok) { try{ alert(JSON.parse(t).error) }catch{ alert('Delete failed') } ; return; }
+      if (!r.ok) {
+        try{ alert(JSON.parse(t).error); }catch{ alert('Delete failed'); }
+        return;
+      }
       loadResults(); // refresh
     };
   });
@@ -356,3 +558,5 @@ async function loadResults(){
 
 elLoad.addEventListener('click', loadResults);
 </script>
+</body>
+</html>
