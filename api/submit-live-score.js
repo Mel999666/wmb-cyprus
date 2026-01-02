@@ -1,4 +1,3 @@
-// /api/submit-live-score.js
 export const config = { runtime: 'edge' };
 
 import { chooseKvCreds } from './_kv-helpers.js';
@@ -10,7 +9,6 @@ function bad(msg, code = 400) {
   });
 }
 
-// Normalize judge name -> stable key
 function normalizeJudge(s) {
   return String(s || '')
     .toLowerCase()
@@ -34,55 +32,28 @@ export default async function handler(req) {
     if (!judgekey) return bad('Invalid judge name');
 
     const { url, token } = chooseKvCreds('write');
-    if (!url || !token) {
-      return bad(
-        `KV not configured. url="${url}", tokenPresent=${!!token}`,
-        500
-      );
-    }
+    if (!url || !token) return bad('KV not configured', 500);
 
-    // We use a separate prefix from the original online-round scores
-    const key = `wmb:livescore:${judgekey}`;
+    const key = `wmb:livesub:${judgekey}`;
+
     const valueObj = {
       judge: judgeRaw,
       judgekey,
-      scores,          // { [bandName]: { tight, song, stage, crowd, note } }
+      scores,
       ts: Date.now(),
     };
-    const json = JSON.stringify(valueObj);
-    const encodedValue = encodeURIComponent(json);
 
+    const encodedValue = encodeURIComponent(JSON.stringify(valueObj));
     const fullUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
 
-    let upstashRes;
-    let text;
+    const upstashRes = await fetch(fullUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    try {
-      upstashRes = await fetch(fullUrl, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      text = await upstashRes.text();
-    } catch (err) {
-      console.error('submit-live-score Upstash fetch error', err);
-      return bad(
-        `KV request failed for URL "${fullUrl}": ${err.message || String(err)}`,
-        500
-      );
-    }
-
-    let data;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      // non-JSON body – ignore
-    }
-
-    if (!upstashRes.ok || (data && data.error)) {
-      return bad(
-        `KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`,
-        500
-      );
+    const text = await upstashRes.text();
+    if (!upstashRes.ok) {
+      return bad(`KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`, 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
