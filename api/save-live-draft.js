@@ -1,3 +1,4 @@
+// /api/save-live-draft.js
 export const config = { runtime: 'edge' };
 
 import { chooseKvCreds } from './_kv-helpers.js';
@@ -32,22 +33,34 @@ export default async function handler(req) {
     if (!judgekey) return bad('Invalid judge name');
 
     const { url, token } = chooseKvCreds('write');
-    if (!url || !token) return bad('KV not configured', 500);
+    if (!url || !token) {
+      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
+    }
 
-    const key = `wmb:livedraft:${judgekey}`;
-    const valueObj = { judge: judgeRaw, judgekey, scores, ts: Date.now() };
+    const key = `wmb:live_draft:${judgekey}`;
+    const valueObj = {
+      judge: judgeRaw,
+      judgekey,
+      scores,
+      ts: Date.now(),
+      draft: true,
+    };
 
-    const encodedValue = encodeURIComponent(JSON.stringify(valueObj));
-    const fullUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
+    const json = JSON.stringify(valueObj);
+    const encodedValue = encodeURIComponent(json);
+    const setUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
 
-    const r = await fetch(fullUrl, {
+    const upstashRes = await fetch(setUrl, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
+    const text = await upstashRes.text();
 
-    const text = await r.text();
-    if (!r.ok) {
-      return bad(`KV write failed (status ${r.status}): ${text || '[no body]'}`, 500);
+    let data;
+    try { data = text ? JSON.parse(text) : null; } catch {}
+
+    if (!upstashRes.ok || (data && data.error)) {
+      return bad(`KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`, 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -55,7 +68,7 @@ export default async function handler(req) {
       headers: { 'content-type': 'application/json' },
     });
   } catch (e) {
-    console.error('save-live-draft error', e);
+    console.error('save-live-draft handler error', e);
     return bad(e?.stack || e?.message || 'Server error', 500);
   }
 }
