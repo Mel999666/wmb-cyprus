@@ -109,6 +109,22 @@
   }
 
   .hidden{display:none}
+
+  .statusline{
+    margin-left:auto;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px;border-radius:999px;
+    background:#1a1416;border:1px solid var(--line);
+    color:var(--muted);font-size:13px
+  }
+  .pill.ok{border-color:#2a6b3a;background:#16331e;color:#b8f0c8}
+  .pill.bad{border-color:#7a2626;background:#2a1515;color:#ffd0d0}
 </style>
 </head>
 <body>
@@ -136,7 +152,10 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <label for="judgeNameLive" style="font-weight:600">Judge name</label>
       <input id="judgeNameLive" type="text" placeholder="e.g. Maria K." autocomplete="name">
-      <span class="muted-small">Your name will be shown on the admin results page.</span>
+      <div class="statusline">
+        <span id="savePill" class="pill">Not saved yet</span>
+        <span class="muted-small">Autosaves while you score (no submit needed).</span>
+      </div>
     </div>
   </section>
 
@@ -205,14 +224,21 @@
     crowd: 0.20,
   };
 
-  const S_KEY = 'wmb.live.scores';
+  const S_KEY  = 'wmb.live.scores';
   const S_NAME = 'wmb.live.judge';
 
   const nameInput = document.getElementById('judgeNameLive');
-  nameInput.value = sessionStorage.getItem(S_NAME) || '';
-  nameInput.addEventListener('input', () => {
-    sessionStorage.setItem(S_NAME, nameInput.value.trim());
-  });
+  const savePill  = document.getElementById('savePill');
+
+  let autosaveTimer = null;
+  let lastAutosaveAt = 0;
+  let autosaveInFlight = false;
+
+  function setPill(text, cls){
+    savePill.textContent = text;
+    savePill.classList.remove('ok','bad');
+    if (cls) savePill.classList.add(cls);
+  }
 
   function liveReadiness(s) {
     const t = Number(s.tight || 0);
@@ -228,7 +254,7 @@
     try { return JSON.parse(sessionStorage.getItem(S_KEY) || '{}'); }
     catch { return {}; }
   }
-  function saveScores(d) {
+  function saveLocal(d) {
     sessionStorage.setItem(S_KEY, JSON.stringify(d||{}));
   }
 
@@ -239,6 +265,70 @@
       .replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;')
       .replace(/'/g,'&#39;');
+  }
+
+  async function fetchExistingDraft(judge){
+    try{
+      const r = await fetch('/api/get-live-draft', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ judge })
+      });
+      const data = await r.json().catch(()=>null);
+      if (!r.ok || !data || !data.ok) return null;
+      if (!data.found) return null;
+      return data.draft || null;
+    }catch{
+      return null;
+    }
+  }
+
+  function scheduleAutosave(){
+    const judge = nameInput.value.trim();
+    if (!judge) {
+      setPill('Enter your name to autosave', '');
+      return;
+    }
+
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => doAutosave(false), 700);
+  }
+
+  async function doAutosave(force){
+    const judge = nameInput.value.trim();
+    if (!judge) return;
+
+    const now = Date.now();
+    if (!force && now - lastAutosaveAt < 600) return;
+    if (autosaveInFlight) return;
+
+    autosaveInFlight = true;
+    setPill('Saving…', '');
+
+    const scores = getSaved();
+
+    try{
+      const r = await fetch('/api/save-live-draft', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ judge, scores })
+      });
+
+      if (!r.ok) {
+        let msg = 'Save failed';
+        try { msg = (await r.json()).error || msg; } catch {}
+        setPill(msg, 'bad');
+        autosaveInFlight = false;
+        return;
+      }
+
+      lastAutosaveAt = Date.now();
+      setPill('Saved', 'ok');
+    }catch{
+      setPill('Save failed', 'bad');
+    }finally{
+      autosaveInFlight = false;
+    }
   }
 
   function renderBands() {
@@ -325,19 +415,21 @@
           s[k] = Number(sl.value);
           card.querySelector(`[data-kv="${k}"]`).textContent = s[k];
           card.querySelector('[data-ready]').textContent = to2(liveReadiness(s));
-          saveScores(savedNow);
+          saveLocal(savedNow);
           renderRanking();
+          scheduleAutosave();
         });
       });
 
       const ta = card.querySelector('textarea[data-k="note"]');
       ta.addEventListener('input', () => {
         s.note = ta.value;
-        saveScores(savedNow);
+        saveLocal(savedNow);
+        scheduleAutosave();
       });
     });
 
-    saveScores(savedNow);
+    saveLocal(savedNow);
     renderRanking();
   }
 
@@ -428,13 +520,15 @@
 </body></html>`;
   }
 
-  document.getElementById('btnReset').onclick = () => {
+  document.getElementById('btnReset').onclick = async () => {
     const blank = {};
     FINALISTS.forEach(name => {
       blank[name] = { tight:0, song:0, stage:0, crowd:0, note:'' };
     });
-    saveScores(blank);
+    saveLocal(blank);
     renderBands();
+    scheduleAutosave();
+    await doAutosave(true);
   };
 
   document.getElementById('btnDownload').onclick = () => {
@@ -455,22 +549,76 @@
       alert('Please enter your name before submitting.');
       return;
     }
+
     const scores = getSaved();
+
     const res = await fetch('/api/submit-live-score', {
       method:'POST',
       headers:{'content-type':'application/json'},
       body: JSON.stringify({ judge, scores })
     });
+
     if (!res.ok) {
-      let msg = 'Could not save your live scores.';
+      let msg = 'Could not submit your live scores.';
       try { msg = (await res.json()).error || msg; } catch {}
       alert(msg);
       return;
     }
-    alert('Live scores submitted. You can still adjust and submit again if needed.');
+
+    setPill('Submitted', 'ok');
+    alert('Live scores submitted.');
   };
 
-  renderBands();
+  // Load name from session, then try to pull draft from server for that name
+  (async function init(){
+    nameInput.value = sessionStorage.getItem(S_NAME) || '';
+
+    nameInput.addEventListener('input', async () => {
+      const v = nameInput.value.trim();
+      sessionStorage.setItem(S_NAME, v);
+
+      if (!v) {
+        setPill('Enter your name to autosave', '');
+        return;
+      }
+
+      setPill('Checking saved draft…', '');
+      const draft = await fetchExistingDraft(v);
+
+      if (draft && draft.scores && typeof draft.scores === 'object') {
+        saveLocal(draft.scores);
+        setPill('Loaded your saved draft', 'ok');
+      } else {
+        setPill('Autosave ready', 'ok');
+      }
+
+      renderBands();
+    });
+
+    if (!nameInput.value.trim()) {
+      setPill('Enter your name to autosave', '');
+      renderBands();
+      return;
+    }
+
+    setPill('Checking saved draft…', '');
+    const draft = await fetchExistingDraft(nameInput.value.trim());
+    if (draft && draft.scores && typeof draft.scores === 'object') {
+      saveLocal(draft.scores);
+      setPill('Loaded your saved draft', 'ok');
+    } else {
+      setPill('Autosave ready', 'ok');
+    }
+
+    renderBands();
+  })();
+
+  window.addEventListener('beforeunload', () => {
+    try {
+      const judge = nameInput.value.trim();
+      if (judge) navigator.sendBeacon('/api/save-live-draft', JSON.stringify({ judge, scores: getSaved() }));
+    } catch {}
+  });
 </script>
 </body>
 </html>
