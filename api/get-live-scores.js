@@ -10,11 +10,32 @@ function bad(msg, code = 400) {
   });
 }
 
+// Accept both plain JSON and URI-encoded JSON
 function safeParseValue(v) {
   if (v == null) return null;
-  try { return JSON.parse(decodeURIComponent(v)); } catch {}
-  try { return JSON.parse(v); } catch {}
+  try {
+    return JSON.parse(decodeURIComponent(v));
+  } catch {}
+  try {
+    return JSON.parse(v);
+  } catch {}
   return null;
+}
+
+// Check whether a submission "looks like" a live scorecard
+function isLiveScores(scores) {
+  if (!scores || typeof scores !== 'object') return false;
+  // Any band with any of the live keys is enough
+  for (const s of Object.values(scores)) {
+    if (!s || typeof s !== 'object') continue;
+    if (
+      Object.prototype.hasOwnProperty.call(s, 'tight') ||
+      Object.prototype.hasOwnProperty.call(s, 'song') ||
+      Object.prototype.hasOwnProperty.call(s, 'stage') ||
+      Object.prototype.hasOwnProperty.call(s, 'crowd')
+    ) return true;
+  }
+  return false;
 }
 
 export default async function handler(req) {
@@ -31,7 +52,10 @@ export default async function handler(req) {
 
     const { url, token } = chooseKvCreds('read');
     if (!url || !token) {
-      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
+      return bad(
+        `KV not configured. url="${url}", tokenPresent=${!!token}`,
+        500
+      );
     }
 
     const prefix = 'wmb:livescore:';
@@ -40,11 +64,13 @@ export default async function handler(req) {
     const keys = await scanAll(url, token, matchPattern, 200);
 
     const entries = [];
+    const skipped = []; // for debug
 
     for (const key of keys) {
-      const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const r = await fetch(
+        `${url}/get/${encodeURIComponent(key)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       if (!r.ok) continue;
 
       const g = await r.json();
@@ -52,21 +78,26 @@ export default async function handler(req) {
       const obj = safeParseValue(raw);
       if (!obj) continue;
 
-      const judgekeyFromKey = key.startsWith(prefix) ? key.slice(prefix.length) : '';
-      const judgekey = obj.judgekey || judgekeyFromKey;
+      const scores = obj.scores || {};
+
+      // Skip anything not in live format (this is what removes the online scorecards from live view)
+      if (!isLiveScores(scores)) {
+        if (debug) skipped.push({ key, judge: obj.judge || '', judgekey: obj.judgekey || '' });
+        continue;
+      }
 
       entries.push({
-        kvkey: key,
         judge: obj.judge || '',
-        judgekey,
-        scores: obj.scores || {},
+        // IMPORTANT: derive judgekey from the KV key, not from obj.judgekey
+        judgekey: key.replace(prefix, ''),
+        scores,
         ts: Number(obj.ts) || 0,
       });
     }
 
     const judges = {};
     for (const e of entries) {
-      const id = e.judge || e.judgekey || e.kvkey;
+      const id = e.judge || e.judgekey;
       judges[id] = { judge: id, when: e.ts, scores: e.scores };
     }
 
@@ -76,8 +107,9 @@ export default async function handler(req) {
       payload.debug = {
         scannedPrefix: matchPattern,
         scannedCount: keys.length,
-        scannedKeys: keys,
-        urlHost: (() => { try { return new URL(url).host; } catch { return url; } })(),
+        returnedCount: entries.length,
+        skippedCount: skipped.length,
+        skipped,
       };
     }
 
