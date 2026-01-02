@@ -22,6 +22,33 @@ function safeParseValue(v) {
   return null;
 }
 
+// Detect whether a sheet looks like a proper ONLINE sheet
+// (m / o / q / p) and not a LIVE sheet (tight / song / stage / crowd).
+function isOnlineSheet(scores) {
+  let hasAny = false;
+  let hasOnline = false;
+  let hasLive = false;
+
+  for (const v of Object.values(scores || {})) {
+    if (!v || typeof v !== 'object') continue;
+    hasAny = true;
+
+    const onlineKeys = ['m', 'o', 'q', 'p'];
+    const liveKeys = ['tight', 'song', 'stage', 'crowd'];
+
+    if (onlineKeys.some(k => typeof v[k] === 'number')) hasOnline = true;
+    if (liveKeys.some(k => v[k] !== undefined && v[k] !== null)) hasLive = true;
+  }
+
+  if (!hasAny) return false;
+  // If it clearly has online keys, treat as online.
+  if (hasOnline) return true;
+  // If it only has live-style keys, treat as NOT online and ignore it.
+  if (hasLive && !hasOnline) return false;
+  // Fallback: treat as online if ambiguous.
+  return true;
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
@@ -64,10 +91,14 @@ export default async function handler(req) {
       const obj = safeParseValue(raw);
       if (!obj) continue;
 
+      const scores = obj.scores || {};
+      // NEW: ignore any records that look like LIVE sheets, not online.
+      if (!isOnlineSheet(scores)) continue;
+
       entries.push({
         judge: obj.judge || '',
         judgekey: obj.judgekey || key.replace(prefix, ''),
-        scores: obj.scores || {},
+        scores,
         ts: Number(obj.ts) || 0,
       });
     }
