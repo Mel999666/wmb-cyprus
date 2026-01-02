@@ -1,3 +1,4 @@
+// /api/submit-live-score.js
 export const config = { runtime: 'edge' };
 
 import { chooseKvCreds } from './_kv-helpers.js';
@@ -32,10 +33,11 @@ export default async function handler(req) {
     if (!judgekey) return bad('Invalid judge name');
 
     const { url, token } = chooseKvCreds('write');
-    if (!url || !token) return bad('KV not configured', 500);
+    if (!url || !token) {
+      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
+    }
 
-    const key = `wmb:livesub:${judgekey}`;
-
+    const key = `wmb:livescore:${judgekey}`;
     const valueObj = {
       judge: judgeRaw,
       judgekey,
@@ -43,7 +45,8 @@ export default async function handler(req) {
       ts: Date.now(),
     };
 
-    const encodedValue = encodeURIComponent(JSON.stringify(valueObj));
+    const json = JSON.stringify(valueObj);
+    const encodedValue = encodeURIComponent(json);
     const fullUrl = `${url}/set/${encodeURIComponent(key)}/${encodedValue}`;
 
     const upstashRes = await fetch(fullUrl, {
@@ -51,15 +54,25 @@ export default async function handler(req) {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    const text = await upstashRes.text();
+    const text = await upstashRes.text().catch(() => '');
     if (!upstashRes.ok) {
       return bad(`KV write failed (status ${upstashRes.status}): ${text || '[no body]'}`, 500);
     }
+
+    // Delete draft for this judge (best effort)
+    try {
+      const draftKey = `wmb:livedraft:${judgekey}`;
+      await fetch(`${url}/del/${encodeURIComponent(draftKey)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
+
   } catch (e) {
     console.error('submit-live-score handler error', e);
     return bad(e?.stack || e?.message || 'Server error', 500);
