@@ -16,7 +16,6 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
-    const alsoDrafts = body?.alsoDrafts !== false; // default true
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
@@ -27,22 +26,25 @@ export default async function handler(req) {
       return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    const patterns = ['wmb:livescore:*'];
-    if (alsoDrafts) patterns.push('wmb:livedraft:*');
+    const patterns = [
+      'wmb:live:*',
+      'wmb:livescore:*',
+      'wmb:live_draft:*',
+    ];
+
+    const keys = [];
+    for (const pat of patterns) {
+      const found = await scanAll(url, token, pat, 1000);
+      found.forEach(k => keys.push(k));
+    }
 
     let deleted = 0;
-
-    for (const pat of patterns) {
-      const keys = await scanAll(url, token, pat, 500);
-      for (const key of keys) {
-        if (!key.startsWith('wmb:livescore:') && !key.startsWith('wmb:livedraft:')) continue;
-
-        const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (r.ok) deleted++;
-      }
+    for (const k of keys) {
+      const r = await fetch(`${url}/del/${encodeURIComponent(k)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) deleted++;
     }
 
     return new Response(JSON.stringify({ ok: true, deleted }), {
