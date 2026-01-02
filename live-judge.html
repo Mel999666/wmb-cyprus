@@ -17,6 +17,7 @@
     color:var(--text);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
   }
+
   header{
     position:sticky;top:0;z-index:50;
     background:linear-gradient(180deg,rgba(10,10,11,.9),rgba(10,10,11,.8));
@@ -44,6 +45,7 @@
     box-shadow:0 18px 40px rgba(0,0,0,.45);
     margin:18px 0;
   }
+
   .explainer{display:grid;gap:10px;margin:8px 0}
   .ex-row{
     display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;
@@ -106,15 +108,7 @@
     display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;
   }
 
-  .statusline{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-    margin-top:8px;color:var(--muted);font-size:13px;
-  }
-  .dot{width:10px;height:10px;border-radius:999px;background:#333;display:inline-block}
-  .dot.ok{background:#2a6b3a}
-  .dot.warn{background:#a06b16}
-  .dot.bad{background:#7a2626}
-
+  .tiny-status{font-size:12px;color:var(--muted)}
   .hidden{display:none}
 </style>
 </head>
@@ -135,7 +129,7 @@
 <main class="container">
   <h1 class="h1">Live Judge Form</h1>
   <p class="muted">
-    This form is for the six finalists only. Score each band from 0 to 10 in every category.
+    This form is for the six finalists only. Score each band from 0–10 in every category.
     Your live readiness score is calculated automatically.
   </p>
 
@@ -143,28 +137,24 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <label for="judgeNameLive" style="font-weight:600">Judge name</label>
       <input id="judgeNameLive" type="text" placeholder="e.g. Maria K." autocomplete="name">
-      <span class="muted-small">Your name is used to save your draft while you score.</span>
+      <span class="muted-small">No password. Your draft will autosave.</span>
     </div>
-    <div class="statusline">
-      <span class="dot" id="saveDot"></span>
-      <span id="saveText">Enter your name to start autosaving.</span>
-      <span id="saveWhen"></span>
-    </div>
+    <div class="tiny-status" id="draftStatus" style="margin-top:10px"></div>
   </section>
 
   <section class="card">
-    <h2 style="margin:0 0 8px;font-size:18px">Live criteria and weights</h2>
+    <h2 style="margin:0 0 8px;font-size:18px">Live criteria & weights</h2>
     <div class="explainer">
       <div class="ex-row">
-        <b>Tightness and Musicianship – 30%</b>
+        <b>Tightness &amp; Musicianship – 30%</b>
         <div>How well they play together: timing, precision, control, sound.</div>
       </div>
       <div class="ex-row">
-        <b>Songwriting and Set Impact – 25%</b>
+        <b>Songwriting &amp; Set Impact – 25%</b>
         <div>Strength of the material as a live set: flow, dynamics, hooks, memorability.</div>
       </div>
       <div class="ex-row">
-        <b>Stage Presence and Performance – 25%</b>
+        <b>Stage Presence &amp; Performance – 25%</b>
         <div>Physical presence, energy, confidence, how they command the stage.</div>
       </div>
       <div class="ex-row">
@@ -207,16 +197,14 @@
     'Speak In Whispers',
     "Ka'aper",
     'Salienzor',
-    'YMNKY' // we also accept YMNKY! when reading
+    'YMNKY!'
   ];
 
   const WEIGHTS = { tight: 0.30, song: 0.25, stage: 0.25, crowd: 0.20 };
 
-  const elDot = document.getElementById('saveDot');
-  const elSaveText = document.getElementById('saveText');
-  const elSaveWhen = document.getElementById('saveWhen');
-
-  const nameInput = document.getElementById('judgeNameLive');
+  const NAME_KEY = 'wmb.live.judge.name';
+  const LOCAL_PREFIX = 'wmb.live.local.'; // per judgekey
+  const elStatus = document.getElementById('draftStatus');
 
   function normalizeJudge(s) {
     return String(s || '')
@@ -226,6 +214,10 @@
       .replace(/\s+/g, ' ');
   }
 
+  const nameInput = document.getElementById('judgeNameLive');
+  nameInput.value = sessionStorage.getItem(NAME_KEY) || '';
+  sessionStorage.setItem(NAME_KEY, nameInput.value.trim());
+
   function liveReadiness(s) {
     const t = Number(s.tight || 0);
     const so = Number(s.song || 0);
@@ -233,6 +225,7 @@
     const c = Number(s.crowd || 0);
     return (t*WEIGHTS.tight + so*WEIGHTS.song + st*WEIGHTS.stage + c*WEIGHTS.crowd);
   }
+
   function to2(n){ return Number(n||0).toFixed(2); }
 
   function esc(s){
@@ -244,140 +237,73 @@
       .replace(/'/g,'&#39;');
   }
 
-  function canonicalBandKey(band){
-    // keep existing stored keys compatible with YMNKY!
-    if (band === 'YMNKY') return 'YMNKY';
-    return band;
-  }
-  function getBandScore(scoresObj, band){
-    if (!scoresObj) return null;
-    const a = scoresObj[band];
-    if (a) return a;
-    // Try alt key for YMNKY
-    if (band === 'YMNKY' && scoresObj['YMNKY!']) return scoresObj['YMNKY!'];
-    if (band === 'YMNKY!' && scoresObj['YMNKY']) return scoresObj['YMNKY'];
-    return null;
+  function blankScores(){
+    const blank = {};
+    FINALISTS.forEach(name => blank[name] = { tight:0, song:0, stage:0, crowd:0, note:'' });
+    return blank;
   }
 
-  function storageKeyForJudge(judgekey){
-    return `wmb.live.scores.${judgekey || 'anon'}`;
+  function currentJudgeRaw(){ return nameInput.value.trim(); }
+  function currentJudgeKey(){ return normalizeJudge(currentJudgeRaw()); }
+  function localKeyFor(judgekey){ return LOCAL_PREFIX + (judgekey || 'unknown'); }
+
+  function getSavedLocal(judgekey) {
+    try { return JSON.parse(sessionStorage.getItem(localKeyFor(judgekey)) || 'null') || blankScores(); }
+    catch { return blankScores(); }
+  }
+  function saveLocal(judgekey, data) {
+    sessionStorage.setItem(localKeyFor(judgekey), JSON.stringify(data || blankScores()));
   }
 
-  function getLocalSaved(judgekey) {
-    try { return JSON.parse(sessionStorage.getItem(storageKeyForJudge(judgekey)) || '{}'); }
-    catch { return {}; }
-  }
+  let draftTimer = null;
+  async function saveDraftOnlineDebounced(){
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(async ()=>{
+      const judge = currentJudgeRaw();
+      const judgekey = currentJudgeKey();
+      if (!judge || !judgekey) return;
 
-  function setLocalSaved(judgekey, data) {
-    sessionStorage.setItem(storageKeyForJudge(judgekey), JSON.stringify(data || {}));
-  }
+      const scores = getSavedLocal(judgekey);
+      elStatus.textContent = 'Saving draft…';
 
-  function setSaveState(kind, msg, whenTs){
-    elDot.className = 'dot';
-    if (kind === 'ok') elDot.classList.add('ok');
-    if (kind === 'warn') elDot.classList.add('warn');
-    if (kind === 'bad') elDot.classList.add('bad');
-    elSaveText.textContent = msg || '';
-    elSaveWhen.textContent = whenTs ? `Last save: ${new Date(whenTs).toLocaleTimeString()}` : '';
-  }
-
-  // -------- autosave draft (debounced) ----------
-  let saveTimer = null;
-  let lastSavedTs = 0;
-
-  async function saveDraftNow() {
-    const judgeRaw = nameInput.value.trim();
-    const judgekey = normalizeJudge(judgeRaw);
-    if (!judgekey) {
-      setSaveState('warn', 'Enter your name to start autosaving.', 0);
-      return;
-    }
-
-    const scores = getLocalSaved(judgekey);
-
-    setSaveState('warn', 'Saving draft…', lastSavedTs || 0);
-
-    try {
-      const res = await fetch('/api/submit-live-draft', {
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body: JSON.stringify({ judge: judgeRaw, scores })
-      });
-      const text = await res.text();
-
-      if (!res.ok) {
-        let msg = 'Draft save failed.';
-        try { msg = JSON.parse(text).error || msg; } catch {}
-        setSaveState('bad', msg, lastSavedTs || 0);
-        return;
+      try {
+        const res = await fetch('/api/save-live-draft', {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body: JSON.stringify({ judge, scores })
+        });
+        if (!res.ok) {
+          elStatus.textContent = 'Draft not saved online (network/server). Local autosave still ok.';
+          return;
+        }
+        elStatus.textContent = 'Draft saved.';
+        setTimeout(()=>{ if (elStatus.textContent === 'Draft saved.') elStatus.textContent = ''; }, 1500);
+      } catch {
+        elStatus.textContent = 'Draft not saved online (network). Local autosave still ok.';
       }
-
-      lastSavedTs = Date.now();
-      setSaveState('ok', 'Draft saved.', lastSavedTs);
-    } catch (e) {
-      setSaveState('bad', 'Draft save failed (network).', lastSavedTs || 0);
-    }
+    }, 800);
   }
 
-  function scheduleDraftSave() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveDraftNow, 650);
-  }
-
-  // -------- load draft from server for judge ----------
-  async function loadDraftForJudge(judgeRaw){
-    const judgekey = normalizeJudge(judgeRaw);
-    if (!judgekey) return null;
-
-    try {
-      const res = await fetch('/api/get-live-draft', {
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body: JSON.stringify({ judge: judgeRaw })
-      });
-      const text = await res.text();
-      if (!res.ok) return null;
-
-      const data = JSON.parse(text || '{}');
-      if (!data || !data.ok) return null;
-
-      return {
-        judge: data.judge || judgeRaw,
-        judgekey: data.judgekey || judgekey,
-        scores: data.scores || {},
-        ts: Number(data.ts) || 0
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  // -------- render ----------
   function renderBands() {
-    const judgeRaw = nameInput.value.trim();
-    const judgekey = normalizeJudge(judgeRaw);
-
     const wrap = document.getElementById('bandsWrap');
     const all = Array.isArray(window.BANDS) ? window.BANDS : [];
     const byName = {};
     all.forEach(b => { byName[b.name] = b; });
 
-    const saved = getLocalSaved(judgekey);
+    const judgekey = currentJudgeKey();
+    const saved = getSavedLocal(judgekey);
     const cards = [];
 
-    FINALISTS.forEach(displayName => {
-      const name = canonicalBandKey(displayName);
-      const band = byName[name] || byName[displayName] || { name: displayName };
-      const s0 = getBandScore(saved, displayName) || getBandScore(saved, name) || { tight:0, song:0, stage:0, crowd:0, note:'' };
-      const s = { tight: s0.tight||0, song:s0.song||0, stage:s0.stage||0, crowd:s0.crowd||0, note:s0.note||'' };
-
+    FINALISTS.forEach(name => {
+      const band = byName[name] || { name };
+      const s = saved[name] || { tight:0, song:0, stage:0, crowd:0, note:'' };
       const ready = liveReadiness(s);
 
       cards.push(`
-        <article class="band" data-band="${esc(displayName)}">
+        <article class="band" data-band="${esc(name)}">
           <div class="band-head">
             <div>
-              <div class="band-name">${esc(displayName)}</div>
+              <div class="band-name">${esc(name)}</div>
               <div class="muted-small">
                 ${esc(band.city || '')}${band.city && band.genre ? ' · ' : ''}${esc(band.genre || '')}
               </div>
@@ -385,34 +311,34 @@
           </div>
 
           <div class="row">
-            <label>Tightness and Musicianship</label>
+            <label>Tightness &amp; Musicianship</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${Number(s.tight)||0}" data-k="tight">
-              <span class="badge" data-kv="tight">${Number(s.tight)||0}</span>
+              <input type="range" min="0" max="10" step="1" value="${s.tight}" data-k="tight">
+              <span class="badge" data-kv="tight">${s.tight}</span>
             </div>
           </div>
 
           <div class="row">
-            <label>Songwriting and Set Impact</label>
+            <label>Songwriting &amp; Set Impact</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${Number(s.song)||0}" data-k="song">
-              <span class="badge" data-kv="song">${Number(s.song)||0}</span>
+              <input type="range" min="0" max="10" step="1" value="${s.song}" data-k="song">
+              <span class="badge" data-kv="song">${s.song}</span>
             </div>
           </div>
 
           <div class="row">
-            <label>Stage Presence and Performance</label>
+            <label>Stage Presence &amp; Performance</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${Number(s.stage)||0}" data-k="stage">
-              <span class="badge" data-kv="stage">${Number(s.stage)||0}</span>
+              <input type="range" min="0" max="10" step="1" value="${s.stage}" data-k="stage">
+              <span class="badge" data-kv="stage">${s.stage}</span>
             </div>
           </div>
 
           <div class="row">
             <label>Crowd Engagement</label>
             <div class="control">
-              <input type="range" min="0" max="10" step="1" value="${Number(s.crowd)||0}" data-k="crowd">
-              <span class="badge" data-kv="crowd">${Number(s.crowd)||0}</span>
+              <input type="range" min="0" max="10" step="1" value="${s.crowd}" data-k="crowd">
+              <span class="badge" data-kv="crowd">${s.crowd}</span>
             </div>
           </div>
 
@@ -423,7 +349,7 @@
 
           <div class="row">
             <label>Comments</label>
-            <textarea data-k="note" placeholder="Optional notes">${esc(s.note||'')}</textarea>
+            <textarea data-k="note" placeholder="Optional notes (e.g. standout song, issues)">${esc(s.note||'')}</textarea>
           </div>
         </article>
       `);
@@ -431,47 +357,29 @@
 
     wrap.innerHTML = cards.join('');
 
-    // bind events
     wrap.querySelectorAll('.band').forEach(card => {
-      const bandName = card.getAttribute('data-band');
-      const judgeRawNow = nameInput.value.trim();
-      const judgekeyNow = normalizeJudge(judgeRawNow);
-
-      // Ensure object exists
-      const savedNow = getLocalSaved(judgekeyNow);
-      const current = getBandScore(savedNow, bandName) || { tight:0, song:0, stage:0, crowd:0, note:'' };
-      savedNow[bandName] = current;
-      setLocalSaved(judgekeyNow, savedNow);
+      const name = card.getAttribute('data-band');
+      const judgekeyNow = currentJudgeKey();
+      const data = getSavedLocal(judgekeyNow);
+      const s = data[name] || (data[name] = { tight:0, song:0, stage:0, crowd:0, note:'' });
 
       card.querySelectorAll('input[type=range]').forEach(sl => {
         sl.addEventListener('input', () => {
-          const judgekey2 = normalizeJudge(nameInput.value.trim());
-          const saved2 = getLocalSaved(judgekey2);
-          const s = saved2[bandName] || (saved2[bandName] = { tight:0, song:0, stage:0, crowd:0, note:'' });
-
           const k = sl.getAttribute('data-k');
           s[k] = Number(sl.value);
-
           card.querySelector(`[data-kv="${k}"]`).textContent = s[k];
           card.querySelector('[data-ready]').textContent = to2(liveReadiness(s));
-
-          setLocalSaved(judgekey2, saved2);
+          saveLocal(judgekeyNow, data);
           renderRanking();
-
-          scheduleDraftSave();
+          saveDraftOnlineDebounced();
         });
       });
 
       const ta = card.querySelector('textarea[data-k="note"]');
       ta.addEventListener('input', () => {
-        const judgekey2 = normalizeJudge(nameInput.value.trim());
-        const saved2 = getLocalSaved(judgekey2);
-        const s = saved2[bandName] || (saved2[bandName] = { tight:0, song:0, stage:0, crowd:0, note:'' });
-
         s.note = ta.value;
-
-        setLocalSaved(judgekey2, saved2);
-        scheduleDraftSave();
+        saveLocal(judgekeyNow, data);
+        saveDraftOnlineDebounced();
       });
     });
 
@@ -479,11 +387,10 @@
   }
 
   function renderRanking() {
-    const judgekey = normalizeJudge(nameInput.value.trim());
-    const saved = getLocalSaved(judgekey);
-
+    const judgekey = currentJudgeKey();
+    const saved = getSavedLocal(judgekey);
     const rows = FINALISTS.map(name => {
-      const s = getBandScore(saved, name) || {};
+      const s = saved[name] || {};
       const r = liveReadiness(s);
       return { band:name, r, note:(s.note||'').trim() };
     });
@@ -499,21 +406,19 @@
     }
 
     rows.sort((a,b) => b.r - a.r);
-
     body.innerHTML = rows.map(r =>
       `<tr><td>${esc(r.band)}</td><td>${to2(r.r)}</td><td>${esc(r.note)}</td></tr>`
     ).join('');
-
     card.classList.remove('hidden');
   }
 
   function makePrintableHtml() {
-    const judge = nameInput.value.trim() || 'Unknown judge';
-    const judgekey = normalizeJudge(judge);
-    const saved = getLocalSaved(judgekey);
+    const judge = currentJudgeRaw() || 'Unknown judge';
+    const judgekey = currentJudgeKey();
+    const saved = getSavedLocal(judgekey);
 
     const rows = FINALISTS.map(name => {
-      const s = getBandScore(saved, name) || {};
+      const s = saved[name] || {};
       return {
         name,
         tight: s.tight|0,
@@ -568,23 +473,11 @@
 </body></html>`;
   }
 
-  // -------- buttons ----------
-  document.getElementById('btnReset').onclick = async () => {
-    const judgeRaw = nameInput.value.trim();
-    const judgekey = normalizeJudge(judgeRaw);
-    if (!judgekey) {
-      alert('Enter your name first, then reset.');
-      return;
-    }
-
-    const blank = {};
-    FINALISTS.forEach(name => {
-      blank[name] = { tight:0, song:0, stage:0, crowd:0, note:'' };
-    });
-
-    setLocalSaved(judgekey, blank);
+  document.getElementById('btnReset').onclick = () => {
+    const judgekey = currentJudgeKey();
+    saveLocal(judgekey, blankScores());
     renderBands();
-    scheduleDraftSave();
+    saveDraftOnlineDebounced();
   };
 
   document.getElementById('btnDownload').onclick = () => {
@@ -600,26 +493,14 @@
   };
 
   document.getElementById('btnSubmit').onclick = async () => {
-    const judge = nameInput.value.trim();
-    const judgekey = normalizeJudge(judge);
-
-    if (!judgekey) {
+    const judge = currentJudgeRaw();
+    const judgekey = currentJudgeKey();
+    if (!judge || !judgekey) {
       alert('Please enter your name before submitting.');
       return;
     }
 
-    const scores = getLocalSaved(judgekey);
-
-    // Basic sanity: at least one non-zero score
-    let any = false;
-    for (const b of FINALISTS) {
-      const s = getBandScore(scores, b) || {};
-      if ((s.tight||0) + (s.song||0) + (s.stage||0) + (s.crowd||0) > 0) { any = true; break; }
-    }
-    if (!any) {
-      alert('No scores detected yet.');
-      return;
-    }
+    const scores = getSavedLocal(judgekey);
 
     const res = await fetch('/api/submit-live-score', {
       method:'POST',
@@ -627,65 +508,22 @@
       body: JSON.stringify({ judge, scores })
     });
 
-    const text = await res.text();
     if (!res.ok) {
       let msg = 'Could not save your live scores.';
-      try { msg = JSON.parse(text).error || msg; } catch {}
+      try { msg = (await res.json()).error || msg; } catch {}
       alert(msg);
       return;
     }
-
-    lastSavedTs = Date.now();
-    setSaveState('ok', 'Submitted live scores. Your draft is now finalized.', lastSavedTs);
-    alert('Live scores submitted.');
+    alert('Live scores submitted. You can still adjust and submit again if needed.');
   };
 
-  // -------- judge name behavior ----------
-  let lastJudgekey = '';
-
-  async function onJudgeNameChange() {
-    const judgeRaw = nameInput.value.trim();
-    const judgekey = normalizeJudge(judgeRaw);
-
-    if (!judgekey) {
-      lastJudgekey = '';
-      setSaveState('warn', 'Enter your name to start autosaving.', 0);
-      document.getElementById('bandsWrap').innerHTML = '';
-      document.getElementById('rankCard').classList.add('hidden');
-      return;
-    }
-
-    if (judgekey === lastJudgekey) return;
-    lastJudgekey = judgekey;
-
-    setSaveState('warn', 'Checking for existing draft…', 0);
-
-    // Load server draft if exists
-    const draft = await loadDraftForJudge(judgeRaw);
-
-    if (draft && draft.scores && Object.keys(draft.scores).length) {
-      setLocalSaved(judgekey, draft.scores);
-      setSaveState('ok', 'Draft loaded.', draft.ts || Date.now());
-    } else {
-      // If local exists, use it, otherwise init empty
-      const local = getLocalSaved(judgekey);
-      if (!local || !Object.keys(local).length) {
-        const blank = {};
-        FINALISTS.forEach(n => blank[n] = { tight:0, song:0, stage:0, crowd:0, note:'' });
-        setLocalSaved(judgekey, blank);
-      }
-      setSaveState('ok', 'Draft ready.', 0);
-    }
-
+  nameInput.addEventListener('input', () => {
+    sessionStorage.setItem(NAME_KEY, nameInput.value.trim());
     renderBands();
-    scheduleDraftSave();
-  }
+    saveDraftOnlineDebounced();
+  });
 
-  nameInput.addEventListener('change', onJudgeNameChange);
-  nameInput.addEventListener('blur', onJudgeNameChange);
-
-  // Start empty until name entered
-  setSaveState('warn', 'Enter your name to start autosaving.', 0);
+  renderBands();
 </script>
 </body>
 </html>
