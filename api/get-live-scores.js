@@ -1,3 +1,4 @@
+// /api/get-live-scores.js
 export const config = { runtime: 'edge' };
 
 import { chooseKvCreds, scanAll } from './_kv-helpers.js';
@@ -29,14 +30,17 @@ export default async function handler(req) {
     }
 
     const { url, token } = chooseKvCreds('read');
-    if (!url || !token) return bad('KV not configured', 500);
+    if (!url || !token) {
+      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
+    }
 
-    const prefix = 'wmb:livesub:';
+    const prefix = 'wmb:livescore:';
     const matchPattern = `${prefix}*`;
 
     const keys = await scanAll(url, token, matchPattern, 200);
 
     const entries = [];
+
     for (const key of keys) {
       const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -48,9 +52,13 @@ export default async function handler(req) {
       const obj = safeParseValue(raw);
       if (!obj) continue;
 
+      const judgekeyFromKey = key.startsWith(prefix) ? key.slice(prefix.length) : '';
+      const judgekey = obj.judgekey || judgekeyFromKey;
+
       entries.push({
+        kvkey: key,
         judge: obj.judge || '',
-        judgekey: obj.judgekey || key.replace(prefix, ''),
+        judgekey,
         scores: obj.scores || {},
         ts: Number(obj.ts) || 0,
       });
@@ -58,14 +66,19 @@ export default async function handler(req) {
 
     const judges = {};
     for (const e of entries) {
-      const id = e.judge || e.judgekey;
+      const id = e.judge || e.judgekey || e.kvkey;
       judges[id] = { judge: id, when: e.ts, scores: e.scores };
     }
 
     const payload = { ok: true, count: entries.length, judges, entries };
 
     if (debug) {
-      payload.debug = { scannedPrefix: matchPattern, scannedCount: keys.length, scannedKeys: keys };
+      payload.debug = {
+        scannedPrefix: matchPattern,
+        scannedCount: keys.length,
+        scannedKeys: keys,
+        urlHost: (() => { try { return new URL(url).host; } catch { return url; } })(),
+      };
     }
 
     return new Response(JSON.stringify(payload), {
