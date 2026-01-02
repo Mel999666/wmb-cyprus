@@ -10,13 +10,8 @@ function bad(msg, code = 400) {
   });
 }
 
-// Normalize judge name/key -> stable key (same style as submit-live-score)
-function normalizeJudge(s) {
-  return String(s || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s]+/g, '')
-    .replace(/\s+/g, ' ');
+function isLiveKey(k) {
+  return /^wmb:(live|livescore|live_draft):/.test(String(k || ''));
 }
 
 export default async function handler(req) {
@@ -25,39 +20,49 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
-    const judgekeyRaw = String(body?.judgekey || '').trim();
+    const key = String(body?.key || '').trim();
+    const judgekey = String(body?.judgekey || '').trim();
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
-    if (!judgekeyRaw) return bad('Missing judge key');
-
-    // IMPORTANT: always delete ONLY from the live namespace
-    const judgekey = normalizeJudge(judgekeyRaw);
-    if (!judgekey) return bad('Invalid judge key');
 
     const { url, token } = chooseKvCreds('write');
     if (!url || !token) {
-      return bad(
-        `KV not configured. url="${url}", tokenPresent=${!!token}`,
-        500
-      );
+      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    const key = `wmb:livescore:${judgekey}`;
-    const fullUrl = `${url}/del/${encodeURIComponent(key)}`;
+    // Prefer deleting the exact key the UI sent.
+    if (key) {
+      if (!isLiveKey(key)) return bad('Refusing to delete non-live key.', 400);
 
-    const upstashRes = await fetch(fullUrl, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const text = await upstashRes.text();
+      const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const text = await r.text();
+      if (!r.ok) return bad(`KV delete failed (status ${r.status}): ${text || '[no body]'}`, 500);
 
-    if (!upstashRes.ok) {
-      return bad(
-        `KV delete failed (status ${upstashRes.status}): ${text || '[no body]'}`,
-        500
-      );
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    // Fallback: delete by judgekey (removes both current + legacy keys)
+    if (!judgekey) return bad('Missing key or judgekey');
+
+    const keysToTry = [
+      `wmb:live:${judgekey}`,
+      `wmb:livescore:${judgekey}`,
+      `wmb:live_draft:${judgekey}`,
+    ];
+
+    for (const k of keysToTry) {
+      await fetch(`${url}/del/${encodeURIComponent(k)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(()=>{});
     }
 
     return new Response(JSON.stringify({ ok: true }), {
