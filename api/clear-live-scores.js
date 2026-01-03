@@ -26,31 +26,27 @@ export default async function handler(req) {
       return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    const patterns = [
-      'wmb:live:*',
-      'wmb:livescore:*',
-      'wmb:live_draft:*',
-      'wmb:live-score:*',
-      'wmb:live_scores:*',
-      'wmb:liveScore:*',
+    // Only live prefixes. Never online.
+    const LIVE_PREFIXES = [
+      'wmb:live:',
+      'wmb:livescore:',
+      'wmb:live_draft:',
     ];
 
     const keys = [];
-    for (const pat of patterns) {
-      const found = await scanAll(url, token, pat, 2000);
-      found.forEach(k => keys.push(k));
+    for (const prefix of LIVE_PREFIXES) {
+      const found = await scanAll(url, token, `${prefix}*`, 1000);
+      for (const k of found) keys.push(k);
     }
 
-    let deleted = 0;
-    for (const k of keys) {
-      const r = await fetch(`${url}/del/${encodeURIComponent(k)}`, {
+    for (const key of keys) {
+      await fetch(`${url}/del/${encodeURIComponent(key)}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-      });
-      if (r.ok) deleted++;
+      }).catch(() => {});
     }
 
-    return new Response(JSON.stringify({ ok: true, deleted }), {
+    return new Response(JSON.stringify({ ok: true, deleted: keys.length }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
