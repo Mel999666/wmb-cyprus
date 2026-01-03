@@ -122,17 +122,14 @@
   const elJudgesBody = document.getElementById('tbodyJudges');
   const elJudgeCount = document.getElementById('judgeCount');
 
-  function isLiveKey(k){
-    return /^wmb:(live|livescore|live_draft|live-score|live_scores|liveScore):/.test(String(k||''));
-  }
-
   function liveReadiness(s){
-    const t = Number(s.tight || 0);
+    const t  = Number(s.tight || 0);
     const so = Number(s.song || 0);
     const st = Number(s.stage || 0);
-    const c = Number(s.crowd || 0);
+    const c  = Number(s.crowd || 0);
     return t*WEIGHTS.tight + so*WEIGHTS.song + st*WEIGHTS.stage + c*WEIGHTS.crowd;
   }
+
   const to2 = n => Number(n||0).toFixed(2);
 
   function escapeHtml(s){
@@ -144,16 +141,37 @@
       .replace(/'/g,'&#39;');
   }
 
+  // Handles old submissions that might have keys like "Ka&#39;aper" or encodeURIComponent(band)
+  function getScoreForBand(scores, band){
+    if (!scores) return null;
+    if (scores[band]) return scores[band];
+
+    const enc = encodeURIComponent(band);
+    if (scores[enc]) return scores[enc];
+
+    const htmlApos = band.replace(/'/g, '&#39;');
+    if (scores[htmlApos]) return scores[htmlApos];
+
+    const decTry = (k) => { try { return decodeURIComponent(k); } catch { return k; } };
+    for (const k of Object.keys(scores)) {
+      if (decTry(k) === band) return scores[k];
+    }
+
+    return null;
+  }
+
   function combineLiveResults(entries){
     const rows = [];
+    const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
 
     FINALISTS.forEach(band => {
       const tightArr=[], songArr=[], stageArr=[], crowdArr=[], readyArr=[];
       let judgesCount = 0;
 
       for (const entry of entries || []) {
-        const s = entry.scores?.[band];
+        const s = getScoreForBand(entry.scores, band);
         if (!s) continue;
+
         judgesCount++;
         tightArr.push(Number(s.tight || 0));
         songArr.push(Number(s.song || 0));
@@ -161,8 +179,6 @@
         crowdArr.push(Number(s.crowd || 0));
         readyArr.push(liveReadiness(s));
       }
-
-      const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
 
       rows.push({
         band,
@@ -206,7 +222,7 @@
 
   function makePrintableHtml(judgeName, scores){
     const rows = FINALISTS.map(name => {
-      const s = scores[name] || {};
+      const s = getScoreForBand(scores, name) || {};
       return {
         name,
         tight: s.tight|0,
@@ -267,25 +283,23 @@
     elJudgesBody.innerHTML = entries.map(e=>{
       const d = e.ts ? new Date(e.ts).toLocaleString() : '';
       const bands = Object.keys(e.scores||{}).length;
-      const key = String(e.key || '');
-
-      const canDelete = isLiveKey(key);
+      const judgekey = String(e.judgekey || '');
 
       return `<tr>
         <td>${escapeHtml(e.judge || e.judgekey || '')}</td>
         <td>${escapeHtml(d)}</td>
         <td>${bands} bands scored</td>
         <td>
-          <button data-view="${escapeHtml(key)}">View card</button>
-          ${canDelete ? `<button data-del="${escapeHtml(key)}" class="danger">Delete</button>` : `<span class="meta">Not live</span>`}
+          <button data-view="${escapeHtml(judgekey)}">View card</button>
+          <button data-del="${escapeHtml(judgekey)}" class="danger">Delete</button>
         </td>
       </tr>`;
     }).join('');
 
     elJudgesBody.querySelectorAll('button[data-view]').forEach(btn=>{
       btn.onclick = ()=>{
-        const key = btn.getAttribute('data-view');
-        const entry = entries.find(e => String(e.key||'') === String(key||''));
+        const judgekey = btn.getAttribute('data-view');
+        const entry = entries.find(e => String(e.judgekey||'') === String(judgekey||''));
         if (!entry) { alert('Could not find this judge submission.'); return; }
         const html = makePrintableHtml(entry.judge || entry.judgekey || '', entry.scores || {});
         const blob = new Blob([html], {type:'text/html;charset=utf-8'});
@@ -297,13 +311,13 @@
     elJudgesBody.querySelectorAll('button[data-del]').forEach(btn=>{
       btn.onclick = async ()=>{
         if (!confirm('Delete this live judge submission?')) return;
-        const key = btn.getAttribute('data-del');
+        const judgekey = btn.getAttribute('data-del');
         const pwd = elPwd.value.trim();
 
         const r = await fetch('/api/delete-live-score', {
           method:'POST',
           headers:{'content-type':'application/json'},
-          body: JSON.stringify({ password: pwd, key })
+          body: JSON.stringify({ password: pwd, judgekey })
         });
 
         const t = await r.text();
