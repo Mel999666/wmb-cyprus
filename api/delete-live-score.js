@@ -10,38 +10,36 @@ function bad(msg, code = 400) {
   });
 }
 
-function isLiveKey(k) {
-  return /^wmb:(live|livescore|live_draft|live-score|live_scores|liveScore):/.test(String(k || ''));
-}
-
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
 
     const body = await req.json();
     const password = String(body?.password || '');
-    const key = String(body?.key || '').trim();
+    const judgekey = String(body?.judgekey || '').trim();
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
-    if (!key) return bad('Missing key');
-
-    if (!isLiveKey(key)) return bad('Refusing to delete non-live key.', 400);
+    if (!judgekey) return bad('Missing judge key');
 
     const { url, token } = chooseKvCreds('write');
     if (!url || !token) {
       return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // Only delete live keys. Never touch online keys.
+    const keysToDelete = [
+      `wmb:live:${judgekey}`,      // current
+      `wmb:livescore:${judgekey}`, // legacy
+      `wmb:live_draft:${judgekey}` // optional draft cleanup
+    ];
 
-    const text = await r.text();
-    if (!r.ok) {
-      return bad(`KV delete failed (status ${r.status}): ${text || '[no body]'}`, 500);
+    for (const key of keysToDelete) {
+      await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
     }
 
     return new Response(JSON.stringify({ ok: true }), {
