@@ -18,6 +18,35 @@ function safeParseValue(v) {
   return null;
 }
 
+/**
+ * Returns true if this submission contains any meaningful scoring.
+ * This is a DISPLAY FILTER ONLY. It does not delete anything.
+ *
+ * We treat a submission as "real" if ANY band has ANY score > 0,
+ * OR if there is any non-empty note field.
+ */
+function hasMeaningfulScores(scores) {
+  if (!scores || typeof scores !== 'object') return false;
+
+  for (const bandKey of Object.keys(scores)) {
+    const s = scores[bandKey];
+    if (!s || typeof s !== 'object') continue;
+
+    const tight = Number(s.tight || 0);
+    const song  = Number(s.song || 0);
+    const stage = Number(s.stage || 0);
+    const crowd = Number(s.crowd || 0);
+
+    if (tight > 0 || song > 0 || stage > 0 || crowd > 0) return true;
+
+    // Keep if judge wrote notes even if scores are 0
+    const note = (s.note || '').toString().trim();
+    if (note.length > 0) return true;
+  }
+
+  return false;
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
@@ -48,11 +77,17 @@ export default async function handler(req) {
       const obj = safeParseValue(raw);
       if (!obj) continue;
 
+      const scores = obj.scores || {};
+
+      // SAFETY: hide any "empty / zero" submissions so online scorecards
+      // don't pollute the live view. This does NOT delete anything.
+      if (!hasMeaningfulScores(scores)) continue;
+
       entries.push({
         key, // keep for debugging, but UI will delete by judgekey
         judge: obj.judge || '',
         judgekey: obj.judgekey || key.replace(LIVE_PREFIX, ''),
-        scores: obj.scores || {},
+        scores,
         ts: Number(obj.ts) || 0,
       });
     }
