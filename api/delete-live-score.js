@@ -16,31 +16,25 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
-    const judgekey = String(body?.judgekey || '').trim();
+    const judgekey = String(body?.judgekey || '');
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
-    if (!judgekey) return bad('Missing judge key');
+    if (!judgekey) return bad('Missing judgekey');
 
     const { url, token } = chooseKvCreds('write');
-    if (!url || !token) {
-      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
-    }
+    if (!url || !token) return bad('KV not configured', 500);
 
-    // Only delete live keys. Never touch online keys.
-    const keysToDelete = [
-      `wmb:live:${judgekey}`,      // current
-      `wmb:livescore:${judgekey}`, // legacy
-      `wmb:live_draft:${judgekey}` // optional draft cleanup
-    ];
+    const key = `wmb:live:${judgekey}`;
 
-    for (const key of keysToDelete) {
-      await fetch(`${url}/del/${encodeURIComponent(key)}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
+    const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data?.error) return bad(data?.error || 'KV delete failed', 500);
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
