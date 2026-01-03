@@ -17,6 +17,10 @@ function safeParseValue(v) {
   return null;
 }
 
+function isAllowedLiveKey(key) {
+  return /^wmb:(live|livescore|live_draft):/.test(String(key || ''));
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== 'POST') return bad('Use POST', 405);
@@ -33,22 +37,28 @@ export default async function handler(req) {
       return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    // Only live prefixes. We also read legacy live prefix for cleanup + dedupe.
+    // Scan possible LIVE prefixes only (including some older variants)
     const patterns = [
       'wmb:live:*',
-      'wmb:livescore:*', // legacy
+      'wmb:livescore:*',
+      'wmb:live_draft:*',
+      'wmb:live-score:*',
+      'wmb:live_scores:*',
+      'wmb:liveScore:*',
     ];
 
-    const allKeys = [];
+    const keys = [];
     for (const pat of patterns) {
-      const keys = await scanAll(url, token, pat, 500);
-      keys.forEach(k => allKeys.push(k));
+      const found = await scanAll(url, token, pat, 1000);
+      found.forEach(k => keys.push(k));
     }
 
-    // Load and dedupe by judgekey, keep latest ts
+    // Load, filter strictly to allowed live keys, then dedupe by judgekey
     const byJudgeKey = new Map();
 
-    for (const key of allKeys) {
+    for (const key of keys) {
+      if (!isAllowedLiveKey(key)) continue;
+
       const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -62,7 +72,7 @@ export default async function handler(req) {
       const judge = String(obj.judge || '').trim();
       const judgekey =
         String(obj.judgekey || '').trim() ||
-        key.replace(/^wmb:(?:live|livescore):/, '');
+        key.replace(/^wmb:(?:live|livescore|live_draft):/, '');
 
       const ts = Number(obj.ts) || 0;
       const scores = obj.scores || {};
@@ -79,10 +89,7 @@ export default async function handler(req) {
       }
     }
 
-    const entries = Array.from(byJudgeKey.values()).sort((a,b)=>{
-      // newest first for admin readability
-      return (b.ts || 0) - (a.ts || 0);
-    });
+    const entries = Array.from(byJudgeKey.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
     return new Response(JSON.stringify({ ok: true, count: entries.length, entries }), {
       status: 200,
