@@ -10,15 +10,12 @@ function bad(msg, code = 400) {
   });
 }
 
+// Accept both plain JSON and URI-encoded JSON
 function safeParseValue(v) {
   if (v == null) return null;
   try { return JSON.parse(decodeURIComponent(v)); } catch {}
   try { return JSON.parse(v); } catch {}
   return null;
-}
-
-function isAllowedLiveKey(key) {
-  return /^wmb:(live|livescore|live_draft):/.test(String(key || ''));
 }
 
 export default async function handler(req) {
@@ -27,6 +24,7 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
+    const debug = !!body?.debug;
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
@@ -37,28 +35,23 @@ export default async function handler(req) {
       return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    // Scan possible LIVE prefixes only (including some older variants)
-    const patterns = [
-      'wmb:live:*',
-      'wmb:livescore:*',
-      'wmb:live_draft:*',
-      'wmb:live-score:*',
-      'wmb:live_scores:*',
-      'wmb:liveScore:*',
+    // We ONLY consider these as "live scoring" storage.
+    // Keep legacy prefix here only to allow old data to be seen + deduped,
+    // but we will still treat them as live and dedupe by judgekey.
+    const LIVE_PREFIXES = [
+      'wmb:live:',      // current
+      'wmb:livescore:'  // legacy from earlier versions
     ];
 
     const keys = [];
-    for (const pat of patterns) {
-      const found = await scanAll(url, token, pat, 1000);
-      found.forEach(k => keys.push(k));
+    for (const prefix of LIVE_PREFIXES) {
+      const found = await scanAll(url, token, `${prefix}*`, 500);
+      for (const k of found) keys.push(k);
     }
 
-    // Load, filter strictly to allowed live keys, then dedupe by judgekey
-    const byJudgeKey = new Map();
-
+    // Read all candidate entries
+    const rawEntries = [];
     for (const key of keys) {
-      if (!isAllowedLiveKey(key)) continue;
-
       const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -69,29 +62,50 @@ export default async function handler(req) {
       const obj = safeParseValue(raw);
       if (!obj) continue;
 
-      const judge = String(obj.judge || '').trim();
-      const judgekey =
-        String(obj.judgekey || '').trim() ||
-        key.replace(/^wmb:(?:live|livescore|live_draft):/, '');
+      const judgekey = String(obj.judgekey || '').trim() || key.split(':').slice(2).join(':');
+      rawEntries.push({
+        key,
+        judge: String(obj.judge || ''),
+        judgekey,
+        scores: obj.scores || {},
+        ts: Number(obj.ts) || 0,
+      });
+    }
 
-      const ts = Number(obj.ts) || 0;
-      const scores = obj.scores || {};
+    // DEDUPE by judgekey (keep newest submission only)
+    const byJudgeKey = new Map();
+    for (const e of rawEntries) {
+      const jk = e.judgekey || '';
+      if (!jk) continue;
 
-      const existing = byJudgeKey.get(judgekey);
-      if (!existing || ts >= existing.ts) {
-        byJudgeKey.set(judgekey, {
-          key, // exact KV key for delete
-          judge,
-          judgekey,
-          scores,
-          ts,
-        });
+      const prev = byJudgeKey.get(jk);
+      if (!prev || (e.ts || 0) > (prev.ts || 0)) {
+        byJudgeKey.set(jk, e);
       }
     }
 
-    const entries = Array.from(byJudgeKey.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const entries = Array.from(byJudgeKey.values())
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
-    return new Response(JSON.stringify({ ok: true, count: entries.length, entries }), {
+    // judges object keyed by judgekey for scoreboard calculations
+    const judges = {};
+    for (const e of entries) {
+      const id = e.judgekey;
+      judges[id] = { judge: e.judge || id, when: e.ts, scores: e.scores };
+    }
+
+    const payload = { ok: true, count: entries.length, judges, entries };
+
+    if (debug) {
+      payload.debug = {
+        prefixes: LIVE_PREFIXES,
+        scannedKeyCount: keys.length,
+        returnedEntryCount: entries.length,
+        scannedKeys: keys,
+      };
+    }
+
+    return new Response(JSON.stringify(payload), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
