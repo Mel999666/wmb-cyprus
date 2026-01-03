@@ -30,11 +30,14 @@ export default async function handler(req) {
       'wmb:live:*',
       'wmb:livescore:*',
       'wmb:live_draft:*',
+      'wmb:live-score:*',
+      'wmb:live_scores:*',
+      'wmb:liveScore:*',
     ];
 
     const keys = [];
     for (const pat of patterns) {
-      const found = await scanAll(url, token, pat, 1000);
+      const found = await scanAll(url, token, pat, 2000);
       found.forEach(k => keys.push(k));
     }
 
