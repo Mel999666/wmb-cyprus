@@ -10,7 +10,7 @@ function bad(msg, code = 400) {
   });
 }
 
-// Accept both plain JSON and URI-encoded JSON
+// Accept both old plain-JSON values and new URI-encoded JSON values
 function safeParseValue(v) {
   if (v == null) return null;
   try { return JSON.parse(decodeURIComponent(v)); } catch {}
@@ -24,33 +24,19 @@ export default async function handler(req) {
 
     const body = await req.json();
     const password = String(body?.password || '');
-    const debug = !!body?.debug;
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
 
     const { url, token } = chooseKvCreds('read');
-    if (!url || !token) {
-      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
-    }
+    if (!url || !token) return bad('KV not configured', 500);
 
-    // We ONLY consider these as "live scoring" storage.
-    // Keep legacy prefix here only to allow old data to be seen + deduped,
-    // but we will still treat them as live and dedupe by judgekey.
-    const LIVE_PREFIXES = [
-      'wmb:live:',      // current
-      'wmb:livescore:'  // legacy from earlier versions
-    ];
+    const LIVE_PREFIX = 'wmb:live:';
+    const keys = await scanAll(url, token, `${LIVE_PREFIX}*`, 200);
 
-    const keys = [];
-    for (const prefix of LIVE_PREFIXES) {
-      const found = await scanAll(url, token, `${prefix}*`, 500);
-      for (const k of found) keys.push(k);
-    }
+    const entries = [];
 
-    // Read all candidate entries
-    const rawEntries = [];
     for (const key of keys) {
       const r = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -62,50 +48,25 @@ export default async function handler(req) {
       const obj = safeParseValue(raw);
       if (!obj) continue;
 
-      const judgekey = String(obj.judgekey || '').trim() || key.split(':').slice(2).join(':');
-      rawEntries.push({
-        key,
-        judge: String(obj.judge || ''),
-        judgekey,
+      entries.push({
+        key, // keep for debugging, but UI will delete by judgekey
+        judge: obj.judge || '',
+        judgekey: obj.judgekey || key.replace(LIVE_PREFIX, ''),
         scores: obj.scores || {},
         ts: Number(obj.ts) || 0,
       });
     }
 
-    // DEDUPE by judgekey (keep newest submission only)
-    const byJudgeKey = new Map();
-    for (const e of rawEntries) {
-      const jk = e.judgekey || '';
-      if (!jk) continue;
-
-      const prev = byJudgeKey.get(jk);
-      if (!prev || (e.ts || 0) > (prev.ts || 0)) {
-        byJudgeKey.set(jk, e);
-      }
-    }
-
-    const entries = Array.from(byJudgeKey.values())
-      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-
-    // judges object keyed by judgekey for scoreboard calculations
-    const judges = {};
+    // de-dupe by judgekey, keep newest (just in case)
+    const byJudge = new Map();
     for (const e of entries) {
-      const id = e.judgekey;
-      judges[id] = { judge: e.judge || id, when: e.ts, scores: e.scores };
+      const prev = byJudge.get(e.judgekey);
+      if (!prev || (e.ts || 0) > (prev.ts || 0)) byJudge.set(e.judgekey, e);
     }
 
-    const payload = { ok: true, count: entries.length, judges, entries };
+    const clean = Array.from(byJudge.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
-    if (debug) {
-      payload.debug = {
-        prefixes: LIVE_PREFIXES,
-        scannedKeyCount: keys.length,
-        returnedEntryCount: entries.length,
-        scannedKeys: keys,
-      };
-    }
-
-    return new Response(JSON.stringify(payload), {
+    return new Response(JSON.stringify({ ok: true, count: clean.length, entries: clean }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
