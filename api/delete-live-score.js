@@ -11,7 +11,7 @@ function bad(msg, code = 400) {
 }
 
 function isLiveKey(k) {
-  return /^wmb:(live|livescore|live_draft):/.test(String(k || ''));
+  return /^wmb:(live|livescore|live_draft|live-score|live_scores|liveScore):/.test(String(k || ''));
 }
 
 export default async function handler(req) {
@@ -21,48 +21,27 @@ export default async function handler(req) {
     const body = await req.json();
     const password = String(body?.password || '');
     const key = String(body?.key || '').trim();
-    const judgekey = String(body?.judgekey || '').trim();
 
     if (!process.env.RESULTS_PASSWORD || password !== process.env.RESULTS_PASSWORD) {
       return bad('Unauthorized', 401);
     }
+    if (!key) return bad('Missing key');
+
+    if (!isLiveKey(key)) return bad('Refusing to delete non-live key.', 400);
 
     const { url, token } = chooseKvCreds('write');
     if (!url || !token) {
       return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
     }
 
-    // Prefer deleting the exact key the UI sent.
-    if (key) {
-      if (!isLiveKey(key)) return bad('Refusing to delete non-live key.', 400);
+    const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const text = await r.text();
-      if (!r.ok) return bad(`KV delete failed (status ${r.status}): ${text || '[no body]'}`, 500);
-
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-
-    // Fallback: delete by judgekey (removes both current + legacy keys)
-    if (!judgekey) return bad('Missing key or judgekey');
-
-    const keysToTry = [
-      `wmb:live:${judgekey}`,
-      `wmb:livescore:${judgekey}`,
-      `wmb:live_draft:${judgekey}`,
-    ];
-
-    for (const k of keysToTry) {
-      await fetch(`${url}/del/${encodeURIComponent(k)}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(()=>{});
+    const text = await r.text();
+    if (!r.ok) {
+      return bad(`KV delete failed (status ${r.status}): ${text || '[no body]'}`, 500);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
