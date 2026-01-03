@@ -248,6 +248,17 @@
     try { return decodeURIComponent(v || ''); } catch { return String(v||''); }
   };
 
+  // Prevent mobile scroll-jump on input by restoring scroll position after DOM updates.
+  function keepScroll(fn){
+    const y = window.scrollY || 0;
+    fn();
+    requestAnimationFrame(() => {
+      window.scrollTo(0, y);
+      // iOS Safari sometimes needs a second tick
+      requestAnimationFrame(() => window.scrollTo(0, y));
+    });
+  }
+
   function renderBands() {
     const wrap = document.getElementById('bandsWrap');
     const all = Array.isArray(window.BANDS) ? window.BANDS : [];
@@ -328,20 +339,24 @@
 
       card.querySelectorAll('input[type=range]').forEach(sl => {
         sl.addEventListener('input', () => {
-          const k = sl.getAttribute('data-k');
-          s[k] = Number(sl.value);
-          card.querySelector(`[data-kv="${k}"]`).textContent = s[k];
-          card.querySelector('[data-ready]').textContent = to2(liveReadiness(s));
-          saveScores(savedNow);
-          renderRanking();
-        });
+          keepScroll(() => {
+            const k = sl.getAttribute('data-k');
+            s[k] = Number(sl.value);
+            card.querySelector(`[data-kv="${k}"]`).textContent = s[k];
+            card.querySelector('[data-ready]').textContent = to2(liveReadiness(s));
+            saveScores(savedNow);
+            renderRanking();
+          });
+        }, { passive: true });
       });
 
       const ta = card.querySelector('textarea[data-k="note"]');
       ta.addEventListener('input', () => {
-        s.note = ta.value;
-        saveScores(savedNow);
-        renderRanking();
+        keepScroll(() => {
+          s.note = ta.value;
+          saveScores(savedNow);
+          renderRanking();
+        });
       });
     });
 
