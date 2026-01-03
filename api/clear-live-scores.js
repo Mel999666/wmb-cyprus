@@ -22,31 +22,24 @@ export default async function handler(req) {
     }
 
     const { url, token } = chooseKvCreds('write');
-    if (!url || !token) {
-      return bad(`KV not configured. url="${url}", tokenPresent=${!!token}`, 500);
+    if (!url || !token) return bad('KV not configured', 500);
+
+    const patterns = ['wmb:live:*', 'wmb:live_draft:*'];
+
+    let deleted = 0;
+
+    for (const pattern of patterns) {
+      const keys = await scanAll(url, token, pattern, 500);
+      for (const key of keys) {
+        const r = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.ok) deleted++;
+      }
     }
 
-    // Only live prefixes. Never online.
-    const LIVE_PREFIXES = [
-      'wmb:live:',
-      'wmb:livescore:',
-      'wmb:live_draft:',
-    ];
-
-    const keys = [];
-    for (const prefix of LIVE_PREFIXES) {
-      const found = await scanAll(url, token, `${prefix}*`, 1000);
-      for (const k of found) keys.push(k);
-    }
-
-    for (const key of keys) {
-      await fetch(`${url}/del/${encodeURIComponent(key)}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
-
-    return new Response(JSON.stringify({ ok: true, deleted: keys.length }), {
+    return new Response(JSON.stringify({ ok: true, deleted }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
